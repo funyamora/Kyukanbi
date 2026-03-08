@@ -7,6 +7,11 @@ import {
   TextInput,
   View,
 } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/screen-container";
@@ -19,6 +24,14 @@ const DRINK_OPTIONS = [
   { value: 2, label: "2杯", emoji: "🥃🥃" },
   { value: 3, label: "3杯", emoji: "🥃🥃🥃" },
   { value: 4, label: "4杯以上", emoji: "🍻" },
+];
+
+const DRINK_DETAIL_OPTIONS = [
+  { value: 4, label: "4杯" },
+  { value: 5, label: "5杯" },
+  { value: 6, label: "6杯" },
+  { value: 7, label: "7杯" },
+  { value: 8, label: "8杯以上" },
 ];
 
 const SATISFACTION_OPTIONS = [
@@ -50,6 +63,28 @@ export default function RecordScreen() {
   const [satisfaction, setSatisfaction] = useState<SatisfactionValue | null>(rec.satisfaction);
   const [memo, setMemo] = useState(rec.memo ?? "");
   const [saved, setSaved] = useState(false);
+  const [showDetailOptions, setShowDetailOptions] = useState(
+    rec.actualDrinks !== null && rec.actualDrinks >= 4
+  );
+
+  const detailHeight = useSharedValue(
+    rec.actualDrinks !== null && rec.actualDrinks >= 4 ? 1 : 0
+  );
+  const detailAnimStyle = useAnimatedStyle(() => ({
+    height: detailHeight.value * 56,
+    opacity: detailHeight.value,
+    overflow: "hidden" as const,
+  }));
+
+  const openDetailOptions = useCallback(() => {
+    setShowDetailOptions(true);
+    detailHeight.value = withTiming(1, { duration: 150 });
+  }, [detailHeight]);
+
+  const closeDetailOptions = useCallback(() => {
+    setShowDetailOptions(false);
+    detailHeight.value = withTiming(0, { duration: 120 });
+  }, [detailHeight]);
 
   // Reset local state when selectedDate changes
   useEffect(() => {
@@ -58,7 +93,10 @@ export default function RecordScreen() {
     setSatisfaction(r.satisfaction);
     setMemo(r.memo ?? "");
     setSaved(false);
-  }, [selectedDate, getRecord]);
+    const hasDetail = r.actualDrinks !== null && r.actualDrinks >= 4;
+    setShowDetailOptions(hasDetail);
+    detailHeight.value = hasDetail ? 1 : 0;
+  }, [selectedDate, getRecord, detailHeight]);
 
   const handleSave = useCallback(async () => {
     await patchRecord(selectedDate, { actualDrinks, satisfaction, memo });
@@ -175,7 +213,10 @@ export default function RecordScreen() {
           <Text style={[styles.sectionLabel, { color: colors.muted }]}>実際の杯数を記録</Text>
           <View style={styles.drinkGrid}>
             {DRINK_OPTIONS.map((opt) => {
-              const isSelected = actualDrinks === opt.value;
+              const isSelected =
+                opt.value === 4
+                  ? actualDrinks !== null && actualDrinks >= 4
+                  : actualDrinks === opt.value;
               return (
                 <Pressable
                   key={opt.value}
@@ -187,7 +228,17 @@ export default function RecordScreen() {
                     },
                     pressed && { opacity: 0.8 },
                   ]}
-                  onPress={() => setActualDrinks(opt.value)}
+                  onPress={() => {
+                    if (opt.value === 4) {
+                      if (!showDetailOptions) {
+                        setActualDrinks(4);
+                        openDetailOptions();
+                      }
+                    } else {
+                      setActualDrinks(opt.value);
+                      closeDetailOptions();
+                    }
+                  }}
                 >
                   <Text style={{ fontSize: 22, marginBottom: 4 }}>{opt.emoji}</Text>
                   <Text style={[styles.drinkLabel, { color: isSelected ? "#FF6B35" : colors.foreground }]}>
@@ -197,6 +248,36 @@ export default function RecordScreen() {
               );
             })}
           </View>
+          <Animated.View style={detailAnimStyle}>
+            <View style={styles.detailRow}>
+              {DRINK_DETAIL_OPTIONS.map((opt) => {
+                const isSelected = actualDrinks === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    style={({ pressed }) => [
+                      styles.detailCard,
+                      {
+                        borderColor: isSelected ? "#FF6B35" : colors.border,
+                        backgroundColor: isSelected ? "#FFF0EB" : colors.background,
+                      },
+                      pressed && { opacity: 0.8 },
+                    ]}
+                    onPress={() => setActualDrinks(opt.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.detailLabel,
+                        { color: isSelected ? "#FF6B35" : colors.foreground },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Animated.View>
           <Pressable
             style={({ pressed }) => [
               styles.zeroBtn,
@@ -308,6 +389,12 @@ const styles = StyleSheet.create({
     padding: 14, alignItems: "center",
   },
   drinkLabel: { fontSize: 13, fontWeight: "700" },
+  detailRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+  detailCard: {
+    flex: 1, borderRadius: 10, borderWidth: 1.5,
+    paddingVertical: 10, alignItems: "center",
+  },
+  detailLabel: { fontSize: 13, fontWeight: "700" },
   zeroBtn: {
     borderRadius: 12, borderWidth: 1.5,
     padding: 12, alignItems: "center",
