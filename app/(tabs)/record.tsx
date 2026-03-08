@@ -82,9 +82,10 @@ export default function RecordScreen() {
   }, [detailHeight]);
 
   const closeDetailOptions = useCallback(() => {
+    if (!showDetailOptions) return;
     setShowDetailOptions(false);
     detailHeight.value = withTiming(0, { duration: 120 });
-  }, [detailHeight]);
+  }, [detailHeight, showDetailOptions]);
 
   // Reset local state when selectedDate changes
   useEffect(() => {
@@ -220,13 +221,12 @@ export default function RecordScreen() {
               return (
                 <Pressable
                   key={opt.value}
-                  style={({ pressed }) => [
+                  style={[
                     styles.drinkCard,
                     {
                       borderColor: isSelected ? "#FF6B35" : colors.border,
                       backgroundColor: isSelected ? "#FFF0EB" : colors.background,
                     },
-                    pressed && { opacity: 0.8 },
                   ]}
                   onPress={() => {
                     if (opt.value === 4) {
@@ -255,13 +255,12 @@ export default function RecordScreen() {
                 return (
                   <Pressable
                     key={opt.value}
-                    style={({ pressed }) => [
+                    style={[
                       styles.detailCard,
                       {
                         borderColor: isSelected ? "#FF6B35" : colors.border,
                         backgroundColor: isSelected ? "#FFF0EB" : colors.background,
                       },
-                      pressed && { opacity: 0.8 },
                     ]}
                     onPress={() => setActualDrinks(opt.value)}
                   >
@@ -279,12 +278,17 @@ export default function RecordScreen() {
             </View>
           </Animated.View>
           <Pressable
-            style={({ pressed }) => [
+            style={[
               styles.zeroBtn,
-              { borderColor: actualDrinks === 0 ? "#4CAF50" : colors.border, backgroundColor: actualDrinks === 0 ? "#E8F5E9" : colors.background },
-              pressed && { opacity: 0.8 },
+              {
+                borderColor: actualDrinks === 0 ? "#4CAF50" : colors.border,
+                backgroundColor: actualDrinks === 0 ? "#E8F5E9" : colors.background,
+              },
             ]}
-            onPress={() => setActualDrinks(0)}
+            onPress={() => {
+              setActualDrinks(0);
+              closeDetailOptions();
+            }}
           >
             <Text style={[styles.zeroBtnText, { color: actualDrinks === 0 ? "#4CAF50" : colors.muted }]}>
               🍵 飲まなかった（0杯）
@@ -301,13 +305,12 @@ export default function RecordScreen() {
               return (
                 <Pressable
                   key={opt.value}
-                  style={({ pressed }) => [
+                  style={[
                     styles.satisfactionCard,
                     {
                       borderColor: isSelected ? "#4A90D9" : colors.border,
                       backgroundColor: isSelected ? "#EEF6FF" : colors.background,
                     },
-                    pressed && { opacity: 0.8 },
                   ]}
                   onPress={() => setSatisfaction(opt.value)}
                 >

@@ -141,13 +141,12 @@ export default function AlternativeScreen() {
                   return (
                     <Pressable
                       key={m.id}
-                      style={({ pressed }) => [
+                      style={[
                         styles.chip,
                         {
                           backgroundColor: isSelected ? "#667EEA" : colors.background,
                           borderColor: isSelected ? "#667EEA" : colors.border,
                         },
-                        pressed && { opacity: 0.75 },
                       ]}
                       onPress={() => setSelectedMood(m.id)}
                     >
@@ -167,13 +166,12 @@ export default function AlternativeScreen() {
           const isSelected = selectedAction === item.id;
           return (
             <Pressable
-              style={({ pressed }) => [
+              style={[
                 styles.actionCard,
                 {
                   backgroundColor: isSelected ? "#EEF2FF" : colors.surface,
                   borderColor: isSelected ? "#667EEA" : colors.border,
                 },
-                pressed && { opacity: 0.8 },
               ]}
               onPress={() => setSelectedAction(item.id)}
             >

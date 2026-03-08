@@ -93,10 +93,9 @@ export default function DeclarationScreen() {
               return (
                 <Pressable
                   key={opt.value}
-                  style={({ pressed }) => [
+                  style={[
                     styles.limitCard,
                     { borderColor: isSelected ? "#FF6B35" : colors.border, backgroundColor: isSelected ? "#FFF0EB" : colors.background },
-                    pressed && { opacity: 0.8 },
                   ]}
                   onPress={() => setSelectedLimit(opt.value)}
                 >
@@ -119,13 +118,12 @@ export default function DeclarationScreen() {
               return (
                 <Pressable
                   key={r}
-                  style={({ pressed }) => [
+                  style={[
                     styles.chip,
                     {
                       backgroundColor: isSelected ? "#4A90D9" : colors.background,
                       borderColor: isSelected ? "#4A90D9" : colors.border,
                     },
-                    pressed && { opacity: 0.75 },
                   ]}
                   onPress={() => setSelectedReason(r)}
                 >
