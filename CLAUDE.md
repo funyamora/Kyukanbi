@@ -39,30 +39,51 @@ kyukoubi-tsukuru/
 ├── tailwind.config.js           ← Tailwind設定（theme.config.jsを参照）
 ├── app.config.ts                ← Expoアプリ設定
 │
-├── components/                 ← 各種ドキュメント
+├── doc/
+│   ├── 技術スタック設計書.md    ← 採用技術とアーキテクチャ
+│   ├── データモデル設計書.md    ← 型定義・AsyncStorageキー・データ操作関数
+│   ├── 画面設計書.md            ← 5タブ＋モーダル画面の詳細設計・画面遷移図
+│   ├── バッジシステム設計書.md  ← バッジ定義・解除条件・通知連携
+│   ├── コンポーネント一覧.md    ← 再利用コンポーネントのProps・使用例
+│   └── design.md               ← デザイン方針・カラーパレット
 │
 ├── lib/
-│   ├── store.ts                 ← 型定義・AsyncStorage操作・ユーティリティ関数
-│   └── app-context.tsx          ← AppProvider・useAppStore フック
+│   ├── store.ts                 ← 型定義・AsyncStorage操作・バッジ・分析関数
+│   ├── app-context.tsx          ← AppProvider・useAppStore フック
+│   ├── notifications.ts         ← 通知（リマインダー・達成通知）
+│   ├── theme-provider.tsx       ← テーマ切替（ThemeProvider・useThemeContext）
+│   └── utils.ts                 ← cn()（clsx + tailwind-merge）
+│
+├── hooks/
+│   ├── use-colors.ts            ← useColors() テーマカラーパレット取得
+│   └── use-color-scheme.ts      ← useColorScheme() 現在のカラースキーム取得
 │
 ├── app/
-│   ├── _layout.tsx              ← ルートレイアウト（AppProvider・ThemeProviderをここでラップ）
+│   ├── _layout.tsx              ← ルートレイアウト（ThemeProvider・AppProvider等をラップ）
+│   ├── onboarding.tsx           ← オンボーディング画面（fullScreenModal）
 │   ├── (tabs)/
 │   │   ├── _layout.tsx          ← タブバー設定（タブ追加時はここを変更）
 │   │   ├── index.tsx            ← ホーム画面
 │   │   ├── weekly.tsx           ← 週間計画画面
 │   │   ├── record.tsx           ← 記録画面
-│   │   └── review.tsx           ← 振り返り画面
+│   │   ├── review.tsx           ← 振り返り画面
+│   │   └── settings.tsx         ← 設定画面
 │   ├── declaration.tsx          ← 飲酒前宣言画面（モーダル遷移）
 │   └── alternative.tsx          ← 代替行動画面（モーダル遷移）
 │
 ├── components/
 │   ├── screen-container.tsx     ← 全画面で使うSafeAreaラッパー（必ず使う）
+│   ├── BadgeList.tsx            ← バッジ一覧（横スクロールFlatList）
+│   ├── WeekdayChart.tsx         ← 曜日別飲酒量グラフ（SVG棒グラフ）
+│   ├── haptic-tab.tsx           ← ハプティクス付きタブボタン
 │   └── ui/
 │       └── icon-symbol.tsx      ← アイコンマッピング（タブ追加前に必ずここに追加）
 │
 └── tests/
-    └── store.test.ts            ← ユーティリティ関数のユニットテスト
+    ├── store.test.ts            ← ストア関数のユニットテスト
+    ├── analytics.test.ts        ← 分析・バッジ関数のテスト
+    ├── notifications.test.ts    ← 通知関数のテスト
+    └── onboarding.test.ts       ← オンボーディングのテスト
 ```
 
 ---
@@ -87,6 +108,43 @@ interface DailyRecord {
 
 interface AppStore {
   records: Record<string, DailyRecord>; // key: "YYYY-MM-DD"
+  badges: string[];                      // 解除済みバッジIDの配列
+}
+
+interface AppSettings {
+  weeklyGoalDays: number;         // 1〜5、デフォルト 2
+  requireConsecutive: boolean;    // 2連続休肝日を目指すか
+  reminderEnabled: boolean;       // 夜間リマインダー ON/OFF
+  reminderTime: string;           // "HH:mm" 形式
+  achievementNotification: boolean; // 達成通知 ON/OFF
+}
+```
+
+### バッジシステム（lib/store.ts）
+
+```typescript
+const BADGE_DEFINITIONS = [
+  { id: "first_kyukan",       emoji: "🥉", name: "初めての休肝日" },
+  { id: "first_consecutive",  emoji: "🥈", name: "初めての2連続" },
+  { id: "first_weekly_goal",  emoji: "🥇", name: "週間目標達成" },
+  { id: "three_weeks_streak", emoji: "💎", name: "3週連続達成" },
+  { id: "one_month_streak",   emoji: "🌟", name: "1ヶ月継続" },
+] as const;
+
+// 新しいバッジの解除判定。戻り値は新たに獲得したバッジIDの配列
+function checkNewBadges(records, existingBadges, weeklyGoalDays): string[]
+```
+
+### 分析関数（lib/store.ts）
+
+```typescript
+// 過去28日間の曜日別平均飲酒杯数（dayIndex: 0=月〜6=日）
+function computeWeekdayAverages(records): { dayIndex: number; label: string; avg: number }[]
+
+// 月次サマリー（前月比・達成率・コメント）
+function computeMonthlySummary(records, year, month, weeklyGoalDays): {
+  kyukanDays: number; prevMonthKyukanDays: number; diff: number;
+  achievementRate: number; comment: string;
 }
 ```
 
@@ -94,7 +152,9 @@ interface AppStore {
 
 | キー | 内容 |
 | :--- | :--- |
-| `kyukoubi_store_v1` | AppStore（全DailyRecord） |
+| `kyukoubi_store_v1` | AppStore（全DailyRecord + badges） |
+| `kyukoubi_settings_v1` | AppSettings（目標・通知設定） |
+| `onboarding_completed` | オンボーディング完了フラグ（`"true"`） |
 
 新しいデータを追加するときは、キー名を `kyukoubi_xxx_v1` の形式で統一してください。
 
@@ -103,13 +163,25 @@ interface AppStore {
 画面からデータを操作するときは必ず `useAppStore()` フックを使います。
 
 ```typescript
-const { store, today, getRecord, patchRecord, refreshStore } = useAppStore();
+const {
+  store,           // AppStore
+  today,           // "YYYY-MM-DD"
+  getRecord,       // (date: string) => DailyRecord
+  patchRecord,     // (date, patch) => Promise<void>  ※内部でバッジチェック・通知連携あり
+  refreshStore,    // () => Promise<void>
+  settings,        // AppSettings
+  patchSettings,   // (patch: Partial<AppSettings>) => Promise<void>
+  resetAllData,    // () => Promise<void>  ※全データ・設定・オンボーディングをリセット
+} = useAppStore();
 
 // 今日のレコードを取得
 const record = getRecord(today);
 
-// レコードを更新
+// レコードを更新（バッジ判定・達成通知が自動で行われる）
 await patchRecord(today, { status: "kyukan" });
+
+// 設定を更新
+await patchSettings({ weeklyGoalDays: 3 });
 ```
 
 ---
@@ -254,12 +326,14 @@ AsyncStorageを使う関数のテストは `vi.mock` でモックしてくださ
 
 ```bash
 pnpm install          # 依存パッケージのインストール
-pnpm dev:metro        # Webプレビュー起動（http://localhost:8081）
+pnpm dev              # サーバー＋Metro同時起動
+pnpm dev:metro        # Webプレビューのみ起動（http://localhost:8081）
 pnpm ios              # iOSシミュレーター起動
 pnpm android          # Androidエミュレーター起動
 pnpm test             # ユニットテスト実行
 pnpm check            # TypeScript型チェック
 pnpm lint             # ESLintチェック
+pnpm format           # Prettierでコードフォーマット
 ```
 
 ---
