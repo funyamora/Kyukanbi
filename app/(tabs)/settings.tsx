@@ -186,9 +186,6 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
-        <Text style={[styles.phaseNote, { color: colors.muted }]}>
-          ※ 通知機能は今後のアップデートで実装予定です
-        </Text>
 
         {/* データ管理 */}
         <Text style={[styles.sectionTitle, { color: colors.muted }]}>データ管理</Text>

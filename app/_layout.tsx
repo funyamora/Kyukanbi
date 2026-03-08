@@ -1,11 +1,13 @@
 import "@/global.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 import "@/lib/_core/nativewind-pressable";
 import { ThemeProvider } from "@/lib/theme-provider";
 import {
@@ -17,8 +19,68 @@ import {
 import type { EdgeInsets, Metrics, Rect } from "react-native-safe-area-context";
 
 import { trpc, createTRPCClient } from "@/lib/trpc";
-import { AppProvider } from "@/lib/app-context";
+import { AppProvider, useAppStore } from "@/lib/app-context";
+import {
+  requestNotificationPermission,
+  scheduleReminder,
+  cancelReminder,
+} from "@/lib/notifications";
 import { initManusRuntime, subscribeSafeAreaInsets } from "@/lib/_core/manus-runtime";
+
+// ─── 通知のフォアグラウンド表示設定 ──────────────────────────────────────────
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
+
+function NotificationSetup() {
+  const router = useRouter();
+  const { store, settings } = useAppStore();
+
+  // 初回権限リクエスト
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    (async () => {
+      const requested = await AsyncStorage.getItem("notification_permission_requested");
+      if (!requested) {
+        await requestNotificationPermission();
+      }
+    })();
+  }, []);
+
+  // リマインダースケジュール更新
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    if (settings.reminderEnabled) {
+      scheduleReminder(settings.reminderTime, store);
+    } else {
+      cancelReminder();
+    }
+  }, [settings.reminderEnabled, settings.reminderTime, store]);
+
+  // 通知タップ時の遷移
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const screen = response.notification.request.content.data?.screen;
+        if (screen && typeof screen === "string") {
+          router.push(screen as never);
+        }
+      }
+    );
+    return () => subscription.remove();
+  }, [router]);
+
+  return null;
+}
 
 const DEFAULT_WEB_INSETS: EdgeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
 const DEFAULT_WEB_FRAME: Rect = { x: 0, y: 0, width: 0, height: 0 };
@@ -84,6 +146,7 @@ export default function RootLayout() {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <AppProvider>
+          <NotificationSetup />
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
           {/* in order for ios apps tab switching to work properly, use presentation: "fullScreenModal" for login page, whenever you decide to use presentation: "modal*/}

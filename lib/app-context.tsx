@@ -13,6 +13,7 @@ import {
   todayStr,
   updateRecord,
 } from "./store";
+import { checkConsecutiveAchievement, sendAchievementNotification } from "./notifications";
 
 interface AppContextValue {
   store: AppStore;
@@ -51,8 +52,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async (date: string, patch: Partial<DailyRecord>) => {
       const newStore = await updateRecord(date, patch);
       setStore({ ...newStore });
+
+      // 達成通知: status が kyukan に変更され、2連続が成立した場合
+      if (
+        patch.status === "kyukan" &&
+        settings.achievementNotification &&
+        checkConsecutiveAchievement(newStore.records, date)
+      ) {
+        sendAchievementNotification();
+      }
     },
-    []
+    [settings.achievementNotification]
   );
 
   const patchSettings = useCallback(
