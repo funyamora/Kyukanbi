@@ -1,17 +1,19 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { AppStore, DailyRecord } from "./store";
 import { getWeekDates, hasConsecutiveKyukan } from "./store";
 
+const isExpoGo = Constants.executionEnvironment === "storeClient";
 const PERMISSION_REQUESTED_KEY = "notification_permission_requested";
 const REMINDER_ID = "reminder_daily";
 
 // ─── 権限管理 ────────────────────────────────────────────────────────────────
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (Platform.OS === "web") return false;
+  if (Platform.OS === "web" || isExpoGo) return false;
 
   const { status: existing } = await Notifications.getPermissionsAsync();
   let finalStatus = existing;
@@ -36,7 +38,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 // ─── リマインダースケジューリング ────────────────────────────────────────────
 
 export async function scheduleReminder(time: string, store: AppStore): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (Platform.OS === "web" || isExpoGo) return;
 
   // 既存のリマインダーをキャンセル
   await cancelReminder();
@@ -76,14 +78,14 @@ export async function scheduleReminder(time: string, store: AppStore): Promise<v
 }
 
 export async function cancelReminder(): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (Platform.OS === "web" || isExpoGo) return;
   await Notifications.cancelScheduledNotificationAsync(REMINDER_ID);
 }
 
 // ─── 達成通知 ────────────────────────────────────────────────────────────────
 
 export async function sendAchievementNotification(): Promise<void> {
-  if (Platform.OS === "web") return;
+  if (Platform.OS === "web" || isExpoGo) return;
 
   await Notifications.scheduleNotificationAsync({
     content: {

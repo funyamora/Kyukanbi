@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -30,22 +30,41 @@ const SATISFACTION_OPTIONS = [
 
 type SatisfactionValue = "great" | "okay" | "regret" | "toomuch";
 
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function RecordScreen() {
   const colors = useColors();
   const { today, getRecord, patchRecord } = useAppStore();
   const insets = useSafeAreaInsets();
 
-  const rec = getRecord(today);
+  const [selectedDate, setSelectedDate] = useState(today);
+  const isToday = selectedDate === today;
+  const canGoForward = selectedDate < today;
+
+  const rec = getRecord(selectedDate);
   const [actualDrinks, setActualDrinks] = useState<number | null>(rec.actualDrinks);
   const [satisfaction, setSatisfaction] = useState<SatisfactionValue | null>(rec.satisfaction);
   const [memo, setMemo] = useState(rec.memo ?? "");
   const [saved, setSaved] = useState(false);
 
+  // Reset local state when selectedDate changes
+  useEffect(() => {
+    const r = getRecord(selectedDate);
+    setActualDrinks(r.actualDrinks);
+    setSatisfaction(r.satisfaction);
+    setMemo(r.memo ?? "");
+    setSaved(false);
+  }, [selectedDate, getRecord]);
+
   const handleSave = useCallback(async () => {
-    await patchRecord(today, { actualDrinks, satisfaction, memo });
+    await patchRecord(selectedDate, { actualDrinks, satisfaction, memo });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  }, [today, patchRecord, actualDrinks, satisfaction, memo]);
+  }, [selectedDate, patchRecord, actualDrinks, satisfaction, memo]);
 
   const declared = rec.declaredLimit;
   const isOver = declared !== null && actualDrinks !== null && actualDrinks > declared;
@@ -56,7 +75,41 @@ export default function RecordScreen() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>記録</Text>
-        <Text style={[styles.headerSub, { color: colors.muted }]}>{formatDateJP(today)}</Text>
+        <View style={styles.dateNav}>
+          <Pressable
+            style={({ pressed }) => [styles.dateNavBtn, pressed && { opacity: 0.5 }]}
+            onPress={() => setSelectedDate(shiftDate(selectedDate, -1))}
+          >
+            <Text style={[styles.dateNavArrow, { color: colors.primary }]}>‹</Text>
+          </Pressable>
+          <View style={styles.dateNavCenter}>
+            <Text style={[styles.dateNavText, { color: colors.foreground }]}>
+              {formatDateJP(selectedDate)}
+            </Text>
+            {isToday && (
+              <Text style={[styles.todayBadge, { color: colors.primary }]}>今日</Text>
+            )}
+          </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.dateNavBtn,
+              !canGoForward && { opacity: 0.25 },
+              pressed && canGoForward && { opacity: 0.5 },
+            ]}
+            onPress={() => canGoForward && setSelectedDate(shiftDate(selectedDate, 1))}
+            disabled={!canGoForward}
+          >
+            <Text style={[styles.dateNavArrow, { color: colors.primary }]}>›</Text>
+          </Pressable>
+        </View>
+        {!isToday && (
+          <Pressable
+            style={({ pressed }) => [styles.todayBtn, { borderColor: colors.primary }, pressed && { opacity: 0.7 }]}
+            onPress={() => setSelectedDate(today)}
+          >
+            <Text style={[styles.todayBtnText, { color: colors.primary }]}>今日に戻る</Text>
+          </Pressable>
+        )}
       </View>
 
       <ScrollView
@@ -66,7 +119,9 @@ export default function RecordScreen() {
         {/* Declared vs actual comparison */}
         {declared !== null && (
           <View style={[styles.section, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.sectionLabel, { color: colors.muted }]}>今日の宣言 vs 実績</Text>
+            <Text style={[styles.sectionLabel, { color: colors.muted }]}>
+              {isToday ? "今日の宣言 vs 実績" : "この日の宣言 vs 実績"}
+            </Text>
             <View style={styles.compareRow}>
               <View style={[styles.compareCard, { backgroundColor: colors.background }]}>
                 <Text style={[styles.compareCardLabel, { color: colors.muted }]}>宣言した上限</Text>
@@ -102,12 +157,14 @@ export default function RecordScreen() {
           </View>
         )}
 
-        {/* Today's status — kyukan */}
+        {/* Status — kyukan */}
         {rec.status === "kyukan" && (
           <View style={[styles.kyukanCard, { backgroundColor: "#E8F5E9" }]}>
             <Text style={{ fontSize: 36 }}>🍵</Text>
             <View>
-              <Text style={[styles.kyukanTitle, { color: "#2E7D32" }]}>今日は休肝日です</Text>
+              <Text style={[styles.kyukanTitle, { color: "#2E7D32" }]}>
+                {isToday ? "今日は休肝日です" : "この日は休肝日です"}
+              </Text>
               <Text style={[styles.kyukanSub, { color: "#4CAF50" }]}>飲んでいない場合は記録不要です</Text>
             </View>
           </View>
@@ -219,6 +276,14 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1 },
   headerTitle: { fontSize: 22, fontWeight: "800", letterSpacing: -0.3 },
   headerSub: { fontSize: 12, marginTop: 2 },
+  dateNav: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  dateNavBtn: { padding: 8 },
+  dateNavArrow: { fontSize: 28, fontWeight: "600", lineHeight: 32 },
+  dateNavCenter: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 },
+  dateNavText: { fontSize: 16, fontWeight: "700" },
+  todayBadge: { fontSize: 11, fontWeight: "700", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: "hidden" },
+  todayBtn: { alignSelf: "center", marginTop: 6, borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4 },
+  todayBtnText: { fontSize: 12, fontWeight: "600" },
   scrollContent: { padding: 16, gap: 14 },
   section: { borderRadius: 16, padding: 16 },
   sectionLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },

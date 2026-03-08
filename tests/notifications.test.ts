@@ -12,6 +12,10 @@ vi.mock("@react-native-async-storage/async-storage", () => ({
   },
 }));
 
+vi.mock("expo-constants", () => ({
+  default: { executionEnvironment: "standalone" },
+}));
+
 vi.mock("expo-notifications", () => ({
   getPermissionsAsync: vi.fn(),
   requestPermissionsAsync: vi.fn(),
