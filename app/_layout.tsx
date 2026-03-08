@@ -40,6 +40,16 @@ if (Platform.OS !== "web") {
   });
 }
 
+function OnboardingGate() {
+  const router = useRouter();
+  useEffect(() => {
+    AsyncStorage.getItem("onboarding_completed").then((val) => {
+      if (!val) router.replace("/onboarding");
+    });
+  }, [router]);
+  return null;
+}
+
 function NotificationSetup() {
   const router = useRouter();
   const { store, settings } = useAppStore();
@@ -146,6 +156,7 @@ export default function RootLayout() {
       <trpc.Provider client={trpcClient} queryClient={queryClient}>
         <QueryClientProvider client={queryClient}>
           <AppProvider>
+          <OnboardingGate />
           <NotificationSetup />
           {/* Default to hiding native headers so raw route segments don't appear (e.g. "(tabs)", "products/[id]"). */}
           {/* If a screen needs the native header, explicitly enable it and set a human title via Stack.Screen options. */}
@@ -153,6 +164,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="oauth/callback" />
+            <Stack.Screen name="onboarding" options={{ presentation: "fullScreenModal", headerShown: false }} />
             <Stack.Screen name="declaration" options={{ presentation: "modal", headerShown: false }} />
             <Stack.Screen name="alternative" options={{ presentation: "modal", headerShown: false }} />
           </Stack>

@@ -1,18 +1,31 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useAppStore } from "@/lib/app-context";
+import type { ThemeColorPalette } from "@/constants/theme";
 import {
   DayStatus,
+  DailyRecord,
   formatMonthDayJP,
   getDayLabel,
   getWeekDates,
@@ -26,11 +39,108 @@ const STATUS_CONFIG: Record<DayStatus, { label: string; emoji: string; bg: strin
   undecided: { label: "未定",      emoji: "？", bg: "#F2F2F7", text: "#8E8E93", border: "#E5E5EA" },
 };
 
+const SWIPE_THRESHOLD = 60;
+const SWIPE_CLAMP = 80;
+
 function getWeekOffset(offset: number): Date {
   const d = new Date();
   d.setDate(d.getDate() + offset * 7);
   return d;
 }
+
+// ─── SwipeableDayRow ──────────────────────────────────────────────────────────
+
+interface SwipeableDayRowProps {
+  date: string;
+  isToday: boolean;
+  rec: DailyRecord;
+  colors: ThemeColorPalette;
+  onSetKyukan: (date: string) => void;
+  onSetOk: (date: string) => void;
+  onTap: (date: string) => void;
+}
+
+function SwipeableDayRow({ date, isToday, rec, colors, onSetKyukan, onSetOk, onTap }: SwipeableDayRowProps) {
+  const translateX = useSharedValue(0);
+  const conf = STATUS_CONFIG[rec.status];
+  const dayLabel = getDayLabel(date);
+  const dateLabel = formatMonthDayJP(date);
+
+  const pan = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .failOffsetY([-10, 10])
+    .onUpdate((e) => {
+      translateX.value = Math.max(-SWIPE_CLAMP, Math.min(SWIPE_CLAMP, e.translationX));
+    })
+    .onEnd((e) => {
+      if (e.translationX > SWIPE_THRESHOLD) {
+        runOnJS(onSetKyukan)(date);
+      } else if (e.translationX < -SWIPE_THRESHOLD) {
+        runOnJS(onSetOk)(date);
+      }
+      translateX.value = withTiming(0, { duration: 120 });
+    });
+
+  const tap = Gesture.Tap().onEnd(() => {
+    runOnJS(onTap)(date);
+  });
+
+  const gesture = Gesture.Race(tap, pan);
+
+  const rowAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
+
+  const leftBgStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [0, SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+  }));
+
+  const rightBgStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(translateX.value, [0, -SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
+  }));
+
+  return (
+    <View style={styles.swipeContainer}>
+      {/* Left swipe bg (kyukan) */}
+      <Animated.View style={[styles.swipeBg, styles.swipeBgLeft, { backgroundColor: "#4CAF50" }, leftBgStyle]}>
+        <Text style={styles.swipeBgLabel}>🍵 休肝日</Text>
+      </Animated.View>
+      {/* Right swipe bg (ok) */}
+      <Animated.View style={[styles.swipeBg, styles.swipeBgRight, { backgroundColor: "#FF6B35" }, rightBgStyle]}>
+        <Text style={styles.swipeBgLabel}>🍺 飲酒OK</Text>
+      </Animated.View>
+
+      <GestureDetector gesture={gesture}>
+        <Animated.View
+          style={[
+            styles.dayRow,
+            { backgroundColor: colors.surface, borderBottomColor: colors.border },
+            rowAnimStyle,
+          ]}
+        >
+          <View style={styles.dayLeft}>
+            <Text style={[styles.dayLabelBig, isToday && { color: "#4A90D9" }]}>
+              {dayLabel}
+            </Text>
+            <Text style={[styles.dayDate, { color: colors.muted }]}>
+              {dateLabel.replace(/（.+）/, "")}
+              {isToday ? " 今日" : ""}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: conf.bg, borderColor: conf.border }]}>
+            <Text style={{ fontSize: 16 }}>{conf.emoji}</Text>
+            <Text style={[styles.statusBadgeText, { color: conf.text }]}>
+              {conf.label}{isToday ? "（今日）" : ""}
+            </Text>
+          </View>
+          <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
+        </Animated.View>
+      </GestureDetector>
+    </View>
+  );
+}
+
+// ─── WeeklyScreen ─────────────────────────────────────────────────────────────
 
 export default function WeeklyScreen() {
   const colors = useColors();
@@ -54,8 +164,31 @@ export default function WeeklyScreen() {
       const idx = STATUS_CYCLE.indexOf(current);
       const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
       await patchRecord(date, { status: next });
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
     },
     [getRecord, patchRecord]
+  );
+
+  const handleSetKyukan = useCallback(
+    async (date: string) => {
+      await patchRecord(date, { status: "kyukan" });
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    },
+    [patchRecord]
+  );
+
+  const handleSetOk = useCallback(
+    async (date: string) => {
+      await patchRecord(date, { status: "ok" });
+      if (Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
+    },
+    [patchRecord]
   );
 
   const weekLabel = () => {
@@ -145,47 +278,28 @@ export default function WeeklyScreen() {
               </View>
             </View>
 
-            <Text style={[styles.listSectionLabel, { color: colors.muted }]}>曜日ごとの設定</Text>
+            <Text style={[styles.listSectionLabel, { color: colors.muted }]}>曜日ごとの設定（←→ スワイプで切替）</Text>
           </>
         }
         renderItem={({ item: date }) => {
           const rec = getRecord(date);
-          const conf = STATUS_CONFIG[rec.status];
           const isToday = date === today;
-          const dayLabel = getDayLabel(date);
-          const dateLabel = formatMonthDayJP(date);
 
           return (
-            <Pressable
-              style={({ pressed }) => [
-                styles.dayRow,
-                { backgroundColor: colors.surface, borderBottomColor: colors.border },
-                pressed && { opacity: 0.8 },
-              ]}
-              onPress={() => handleToggle(date)}
-            >
-              <View style={styles.dayLeft}>
-                <Text style={[styles.dayLabelBig, isToday && { color: "#4A90D9" }]}>
-                  {dayLabel}
-                </Text>
-                <Text style={[styles.dayDate, { color: colors.muted }]}>
-                  {dateLabel.replace(/（.+）/, "")}
-                  {isToday ? " 今日" : ""}
-                </Text>
-              </View>
-              <View style={[styles.statusBadge, { backgroundColor: conf.bg, borderColor: conf.border }]}>
-                <Text style={{ fontSize: 16 }}>{conf.emoji}</Text>
-                <Text style={[styles.statusBadgeText, { color: conf.text }]}>
-                  {conf.label}{isToday ? "（今日）" : ""}
-                </Text>
-              </View>
-              <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
-            </Pressable>
+            <SwipeableDayRow
+              date={date}
+              isToday={isToday}
+              rec={rec}
+              colors={colors}
+              onSetKyukan={handleSetKyukan}
+              onSetOk={handleSetOk}
+              onTap={handleToggle}
+            />
           );
         }}
         ListFooterComponent={
           <View style={[styles.legend, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.legendTitle, { color: colors.muted }]}>凡例（タップで切り替え）</Text>
+            <Text style={[styles.legendTitle, { color: colors.muted }]}>凡例（タップ or スワイプで切り替え）</Text>
             <View style={styles.legendRow}>
               {Object.entries(STATUS_CONFIG).map(([key, conf]) => (
                 <View key={key} style={styles.legendItem}>
@@ -232,6 +346,17 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 11, marginTop: 2 },
   summaryDivider: { width: 1, height: 36 },
   listSectionLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  // Swipe container
+  swipeContainer: { position: "relative", overflow: "hidden" },
+  swipeBg: {
+    position: "absolute", top: 0, bottom: 0,
+    alignItems: "center", justifyContent: "center",
+    paddingHorizontal: 20, minWidth: 80,
+  },
+  swipeBgLeft: { left: 0, borderRadius: 0 },
+  swipeBgRight: { right: 0, borderRadius: 0 },
+  swipeBgLabel: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  // Day row
   dayRow: {
     flexDirection: "row", alignItems: "center",
     paddingVertical: 14, paddingHorizontal: 16,

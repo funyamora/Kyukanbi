@@ -1,12 +1,20 @@
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSequence,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ScreenContainer } from "@/components/screen-container";
@@ -45,6 +53,46 @@ export default function HomeScreen() {
 
   const hasConsecutive = hasConsecutiveKyukan(store.records, weekDates);
   const canAchieveIfDrink = canAchieveConsecutiveIfDrink(store.records, weekDates, today);
+
+  // ─── Animations ──────────────────────────────────────────────────────────────
+  const cardScale = useSharedValue(1);
+  const cardOverlayOpacity = useSharedValue(0);
+  const prevStatusRef = useRef<DayStatus>(todayStatus);
+  const prevHasConsecutiveRef = useRef(hasConsecutive);
+
+  useEffect(() => {
+    if (prevStatusRef.current !== todayStatus) {
+      prevStatusRef.current = todayStatus;
+      cardScale.value = withSequence(
+        withTiming(0.97, { duration: 75 }),
+        withTiming(1.0, { duration: 75 })
+      );
+      if (todayStatus === "kyukan" && Platform.OS !== "web") {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    }
+  }, [todayStatus, cardScale]);
+
+  useEffect(() => {
+    if (!prevHasConsecutiveRef.current && hasConsecutive) {
+      cardOverlayOpacity.value = withSequence(
+        withTiming(1, { duration: 150 }),
+        withTiming(0, { duration: 150 })
+      );
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    }
+    prevHasConsecutiveRef.current = hasConsecutive;
+  }, [hasConsecutive, cardOverlayOpacity]);
+
+  const cardAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: cardScale.value }],
+  }));
+
+  const overlayAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: cardOverlayOpacity.value,
+  }));
 
   const handleNodrink = useCallback(async () => {
     await patchRecord(today, { status: "kyukan" });
@@ -96,7 +144,15 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Today's status card */}
-        <View style={[styles.todayCard, { backgroundColor: todayCardBg }]}>
+        <Animated.View style={[styles.todayCard, { backgroundColor: todayCardBg }, cardAnimatedStyle]}>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: "#4CAF50", borderRadius: 20 },
+              overlayAnimatedStyle,
+            ]}
+          />
           <View style={styles.todayCardInner}>
             <Text style={styles.todayDateLabel}>{formatDateJP(today)}</Text>
             <Text style={styles.todayStatusSub}>今日は</Text>
@@ -122,7 +178,7 @@ export default function HomeScreen() {
           </View>
           {/* decorative circle */}
           <View style={styles.decorCircle} />
-        </View>
+        </Animated.View>
 
         {/* Impact warning */}
         {impactMessage && (
