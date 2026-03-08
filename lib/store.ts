@@ -149,5 +149,5 @@ export async function saveSettings(settings: AppSettings): Promise<void> {
 }
 
 export async function clearAllData(): Promise<void> {
-  await AsyncStorage.multiRemove([STORE_KEY, SETTINGS_KEY]);
+  await AsyncStorage.multiRemove([STORE_KEY, SETTINGS_KEY, "onboarding_completed"]);
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Platform,
@@ -39,8 +39,20 @@ const STATUS_CONFIG: Record<DayStatus, { label: string; emoji: string; bg: strin
   undecided: { label: "未定",      emoji: "？", bg: "#F2F2F7", text: "#8E8E93", border: "#E5E5EA" },
 };
 
-const SWIPE_THRESHOLD = 60;
-const SWIPE_CLAMP = 80;
+const STATUS_BADGE_STYLES = StyleSheet.create({
+  kyukan:    { backgroundColor: "#E8F5E9", borderColor: "#4CAF50" },
+  ok:        { backgroundColor: "#FFF3E0", borderColor: "#FF6B35" },
+  undecided: { backgroundColor: "#F2F2F7", borderColor: "#E5E5EA" },
+});
+
+const STATUS_TEXT_STYLES = StyleSheet.create({
+  kyukan:    { color: "#2E7D32" },
+  ok:        { color: "#E65100" },
+  undecided: { color: "#8E8E93" },
+});
+
+const SWIPE_THRESHOLD = 80;
+const SWIPE_CLAMP = 120;
 
 function getWeekOffset(offset: number): Date {
   const d = new Date();
@@ -62,9 +74,14 @@ interface SwipeableDayRowProps {
 
 function SwipeableDayRow({ date, isToday, rec, colors, onSetKyukan, onSetOk, onTap }: SwipeableDayRowProps) {
   const translateX = useSharedValue(0);
+  const swipedRef = useRef(false);
   const conf = STATUS_CONFIG[rec.status];
   const dayLabel = getDayLabel(date);
   const dateLabel = formatMonthDayJP(date);
+
+  const markSwiped = useCallback(() => {
+    swipedRef.current = true;
+  }, []);
 
   const pan = Gesture.Pan()
     .activeOffsetX([-10, 10])
@@ -74,18 +91,14 @@ function SwipeableDayRow({ date, isToday, rec, colors, onSetKyukan, onSetOk, onT
     })
     .onEnd((e) => {
       if (e.translationX > SWIPE_THRESHOLD) {
+        runOnJS(markSwiped)();
         runOnJS(onSetKyukan)(date);
       } else if (e.translationX < -SWIPE_THRESHOLD) {
+        runOnJS(markSwiped)();
         runOnJS(onSetOk)(date);
       }
       translateX.value = withTiming(0, { duration: 120 });
     });
-
-  const tap = Gesture.Tap().onEnd(() => {
-    runOnJS(onTap)(date);
-  });
-
-  const gesture = Gesture.Race(tap, pan);
 
   const rowAnimStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
@@ -99,6 +112,14 @@ function SwipeableDayRow({ date, isToday, rec, colors, onSetKyukan, onSetOk, onT
     opacity: interpolate(translateX.value, [0, -SWIPE_THRESHOLD], [0, 1], Extrapolation.CLAMP),
   }));
 
+  const handlePress = useCallback(() => {
+    if (swipedRef.current) {
+      swipedRef.current = false;
+      return;
+    }
+    onTap(date);
+  }, [onTap, date]);
+
   return (
     <View style={styles.swipeContainer}>
       {/* Left swipe bg (kyukan) */}
@@ -110,30 +131,33 @@ function SwipeableDayRow({ date, isToday, rec, colors, onSetKyukan, onSetOk, onT
         <Text style={styles.swipeBgLabel}>🍺 飲酒OK</Text>
       </Animated.View>
 
-      <GestureDetector gesture={gesture}>
-        <Animated.View
-          style={[
-            styles.dayRow,
-            { backgroundColor: colors.surface, borderBottomColor: colors.border },
-            rowAnimStyle,
-          ]}
-        >
-          <View style={styles.dayLeft}>
-            <Text style={[styles.dayLabelBig, isToday && { color: "#4A90D9" }]}>
-              {dayLabel}
-            </Text>
-            <Text style={[styles.dayDate, { color: colors.muted }]}>
-              {dateLabel.replace(/（.+）/, "")}
-              {isToday ? " 今日" : ""}
-            </Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: conf.bg, borderColor: conf.border }]}>
-            <Text style={{ fontSize: 16 }}>{conf.emoji}</Text>
-            <Text style={[styles.statusBadgeText, { color: conf.text }]}>
-              {conf.label}{isToday ? "（今日）" : ""}
-            </Text>
-          </View>
-          <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
+      <GestureDetector gesture={pan}>
+        <Animated.View style={rowAnimStyle}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.dayRow,
+              { backgroundColor: colors.surface, borderBottomColor: colors.border },
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={handlePress}
+          >
+            <View style={styles.dayLeft}>
+              <Text style={[styles.dayLabelBig, isToday && { color: "#4A90D9" }]}>
+                {dayLabel}
+              </Text>
+              <Text style={[styles.dayDate, { color: colors.muted }]}>
+                {dateLabel.replace(/（.+）/, "")}
+                {isToday ? " 今日" : ""}
+              </Text>
+            </View>
+            <View style={[styles.statusBadge, STATUS_BADGE_STYLES[rec.status]]}>
+              <Text style={{ fontSize: 16 }}>{conf.emoji}</Text>
+              <Text style={[styles.statusBadgeText, STATUS_TEXT_STYLES[rec.status]]}>
+                {conf.label}{isToday ? "（今日）" : ""}
+              </Text>
+            </View>
+            <Text style={[styles.chevron, { color: colors.muted }]}>›</Text>
+          </Pressable>
         </Animated.View>
       </GestureDetector>
     </View>
@@ -158,14 +182,22 @@ export default function WeeklyScreen() {
 
   const kyukanDays = weekDates.filter((d) => getRecord(d).status === "kyukan").length;
 
+  const togglingRef = useRef(false);
+
   const handleToggle = useCallback(
     async (date: string) => {
-      const current = getRecord(date).status;
-      const idx = STATUS_CYCLE.indexOf(current);
-      const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-      await patchRecord(date, { status: next });
-      if (Platform.OS !== "web") {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (togglingRef.current) return;
+      togglingRef.current = true;
+      try {
+        const current = getRecord(date).status;
+        const idx = STATUS_CYCLE.indexOf(current);
+        const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+        await patchRecord(date, { status: next });
+        if (Platform.OS !== "web") {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
+      } finally {
+        togglingRef.current = false;
       }
     },
     [getRecord, patchRecord]
@@ -209,6 +241,7 @@ export default function WeeklyScreen() {
 
       <FlatList
         data={weekDates}
+        extraData={store.records}
         keyExtractor={(item) => item}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 80 }]}
         showsVerticalScrollIndicator={false}
