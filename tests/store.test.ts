@@ -4,6 +4,7 @@ import {
   hasConsecutiveKyukan,
   canAchieveConsecutiveIfDrink,
   defaultRecord,
+  defaultSettings,
   formatDateJP,
   getDayLabel,
   type DailyRecord,
@@ -85,5 +86,23 @@ describe("getDayLabel", () => {
     const result2 = getDayLabel("2026-03-10");
     expect(validDays).toContain(result1);
     expect(validDays).toContain(result2);
+  });
+});
+
+describe("defaultSettings", () => {
+  it("returns correct default values", () => {
+    const settings = defaultSettings();
+    expect(settings.weeklyGoalDays).toBe(2);
+    expect(settings.requireConsecutive).toBe(true);
+    expect(settings.reminderEnabled).toBe(true);
+    expect(settings.reminderTime).toBe("20:00");
+    expect(settings.achievementNotification).toBe(true);
+  });
+
+  it("returns a new object each time", () => {
+    const a = defaultSettings();
+    const b = defaultSettings();
+    expect(a).toEqual(b);
+    expect(a).not.toBe(b);
   });
 });

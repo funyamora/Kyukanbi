@@ -1,10 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import {
+  AppSettings,
   AppStore,
   DailyRecord,
   defaultRecord,
+  defaultSettings,
+  loadSettings,
   loadStore,
+  saveSettings,
   saveStore,
+  clearAllData,
   todayStr,
   updateRecord,
 } from "./store";
@@ -15,12 +20,16 @@ interface AppContextValue {
   getRecord: (date: string) => DailyRecord;
   patchRecord: (date: string, patch: Partial<DailyRecord>) => Promise<void>;
   refreshStore: () => Promise<void>;
+  settings: AppSettings;
+  patchSettings: (patch: Partial<AppSettings>) => Promise<void>;
+  resetAllData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [store, setStore] = useState<AppStore>({ records: {} });
+  const [settings, setSettings] = useState<AppSettings>(defaultSettings());
   const today = todayStr();
 
   const refreshStore = useCallback(async () => {
@@ -30,6 +39,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     refreshStore();
+    loadSettings().then(setSettings);
   }, [refreshStore]);
 
   const getRecord = useCallback(
@@ -45,8 +55,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const patchSettings = useCallback(
+    async (patch: Partial<AppSettings>) => {
+      const updated = { ...settings, ...patch };
+      await saveSettings(updated);
+      setSettings(updated);
+    },
+    [settings]
+  );
+
+  const resetAllData = useCallback(async () => {
+    await clearAllData();
+    setStore({ records: {} });
+    setSettings(defaultSettings());
+  }, []);
+
   return (
-    <AppContext.Provider value={{ store, today, getRecord, patchRecord, refreshStore }}>
+    <AppContext.Provider
+      value={{ store, today, getRecord, patchRecord, refreshStore, settings, patchSettings, resetAllData }}
+    >
       {children}
     </AppContext.Provider>
   );

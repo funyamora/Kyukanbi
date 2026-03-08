@@ -19,9 +19,28 @@ export interface AppStore {
   records: Record<string, DailyRecord>; // key: YYYY-MM-DD
 }
 
+export interface AppSettings {
+  weeklyGoalDays: number; // 1〜5、デフォルト 2
+  requireConsecutive: boolean; // 2連続休肝日を目指すか
+  reminderEnabled: boolean; // 夜間リマインダー ON/OFF
+  reminderTime: string; // "HH:mm" 形式
+  achievementNotification: boolean; // 達成通知 ON/OFF
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const STORE_KEY = "kyukoubi_store_v1";
+const SETTINGS_KEY = "kyukoubi_settings_v1";
+
+export function defaultSettings(): AppSettings {
+  return {
+    weeklyGoalDays: 2,
+    requireConsecutive: true,
+    reminderEnabled: true,
+    reminderTime: "20:00",
+    achievementNotification: true,
+  };
+}
 
 export function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
@@ -113,4 +132,22 @@ export async function updateRecord(date: string, patch: Partial<DailyRecord>): P
   store.records[date] = { ...existing, ...patch };
   await saveStore(store);
   return store;
+}
+
+export async function loadSettings(): Promise<AppSettings> {
+  try {
+    const raw = await AsyncStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw) as AppSettings;
+  } catch (_) {}
+  return defaultSettings();
+}
+
+export async function saveSettings(settings: AppSettings): Promise<void> {
+  try {
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  } catch (_) {}
+}
+
+export async function clearAllData(): Promise<void> {
+  await AsyncStorage.multiRemove([STORE_KEY, SETTINGS_KEY]);
 }

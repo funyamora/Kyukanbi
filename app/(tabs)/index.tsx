@@ -85,7 +85,7 @@ export default function HomeScreen() {
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>休肝日つくーる</Text>
         <Pressable
           style={[styles.settingsBtn, { backgroundColor: colors.background }]}
-          onPress={() => {}}
+          onPress={() => router.push("/(tabs)/settings")}
         >
           <Text style={{ fontSize: 18 }}>⚙️</Text>
         </Pressable>
