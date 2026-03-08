@@ -12,6 +12,7 @@ import {
   clearAllData,
   todayStr,
   updateRecord,
+  checkNewBadges,
 } from "./store";
 import { checkConsecutiveAchievement, sendAchievementNotification } from "./notifications";
 
@@ -29,7 +30,7 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [store, setStore] = useState<AppStore>({ records: {} });
+  const [store, setStore] = useState<AppStore>({ records: {}, badges: [] });
   const [settings, setSettings] = useState<AppSettings>(defaultSettings());
   const today = todayStr();
 
@@ -51,6 +52,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const patchRecord = useCallback(
     async (date: string, patch: Partial<DailyRecord>) => {
       const newStore = await updateRecord(date, patch);
+
+      // バッジ解除チェック
+      const newBadges = checkNewBadges(
+        newStore.records,
+        newStore.badges ?? [],
+        settings.weeklyGoalDays
+      );
+      if (newBadges.length > 0) {
+        newStore.badges = [...(newStore.badges ?? []), ...newBadges];
+        await saveStore(newStore);
+      }
+
       setStore({ ...newStore });
 
       // 達成通知: status が kyukan に変更され、2連続が成立した場合
@@ -62,7 +75,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         sendAchievementNotification();
       }
     },
-    [settings.achievementNotification]
+    [settings.achievementNotification, settings.weeklyGoalDays]
   );
 
   const patchSettings = useCallback(
@@ -76,7 +89,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const resetAllData = useCallback(async () => {
     await clearAllData();
-    setStore({ records: {} });
+    setStore({ records: {}, badges: [] });
     setSettings(defaultSettings());
   }, []);
 

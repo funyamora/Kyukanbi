@@ -1,17 +1,26 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BadgeList } from "@/components/BadgeList";
 import { ScreenContainer } from "@/components/screen-container";
+import { WeekdayChart } from "@/components/WeekdayChart";
 import { useColors } from "@/hooks/use-colors";
 import { useAppStore } from "@/lib/app-context";
-import { DailyRecord, getWeekDates, hasConsecutiveKyukan } from "@/lib/store";
+import {
+  DailyRecord,
+  computeMonthlySummary,
+  computeWeekdayAverages,
+  getWeekDates,
+  hasConsecutiveKyukan,
+} from "@/lib/store";
 
 type TabType = "week" | "month";
 
@@ -79,7 +88,7 @@ function computePrevStats(records: Record<string, DailyRecord>, dates: string[],
 
 export default function ReviewScreen() {
   const colors = useColors();
-  const { store } = useAppStore();
+  const { store, settings } = useAppStore();
   const insets = useSafeAreaInsets();
 
   const [tab, setTab] = useState<TabType>("week");
@@ -103,6 +112,23 @@ export default function ReviewScreen() {
   const stats = useMemo(() => computeStats(store.records, dates), [store.records, dates]);
   const prevStats = useMemo(() => computePrevStats(store.records, dates, prevDates), [store.records, dates, prevDates]);
 
+  // 曜日別平均
+  const weekdayData = useMemo(() => computeWeekdayAverages(store.records), [store.records]);
+
+  // 月次サマリー
+  const monthlySummary = useMemo(
+    () =>
+      tab === "month"
+        ? computeMonthlySummary(
+            store.records,
+            monthYear.getFullYear(),
+            monthYear.getMonth(),
+            settings.weeklyGoalDays
+          )
+        : null,
+    [store.records, tab, monthOffset, settings.weeklyGoalDays]
+  );
+
   const periodLabel = tab === "week"
     ? weekDates.length >= 7
       ? `${new Date(weekDates[0]).getMonth() + 1}月${new Date(weekDates[0]).getDate()}日（月）〜 ${new Date(weekDates[6]).getMonth() + 1}月${new Date(weekDates[6]).getDate()}日（日）`
@@ -122,12 +148,33 @@ export default function ReviewScreen() {
     insights.push("上限を超えることが多い週でした。宣言を活用してみましょう");
   }
 
+  const handleShare = useCallback(async () => {
+    if (!monthlySummary) return;
+    const monthName = `${monthYear.getFullYear()}年${monthYear.getMonth() + 1}月`;
+    const diffText = monthlySummary.diff >= 0
+      ? `+${monthlySummary.diff}日`
+      : `${monthlySummary.diff}日`;
+    const message = [
+      "【休肝日つくーる 月次レポート】",
+      monthName,
+      `休肝日: ${monthlySummary.kyukanDays}日（先月比 ${diffText}）`,
+      `達成率: ${monthlySummary.achievementRate}%`,
+      monthlySummary.comment,
+    ].join("\n");
+    try {
+      await Share.share({ message });
+    } catch (_) {}
+  }, [monthlySummary, monthYear]);
+
   return (
     <ScreenContainer containerClassName="bg-background">
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>振り返り</Text>
       </View>
+
+      {/* Badge list */}
+      <BadgeList earnedBadges={store.badges ?? []} />
 
       {/* Tab */}
       <View style={[styles.tabBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
@@ -204,6 +251,42 @@ export default function ReviewScreen() {
           </View>
         </View>
 
+        {/* Monthly summary card (month tab only) */}
+        {tab === "month" && monthlySummary && (
+          <View style={[styles.section, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.sectionLabel, { color: colors.muted }]}>月次サマリー</Text>
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
+                  {monthlySummary.kyukanDays}日
+                </Text>
+                <Text style={[styles.summaryLabel, { color: colors.muted }]}>休肝日</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text
+                  style={[
+                    styles.summaryValue,
+                    { color: monthlySummary.diff >= 0 ? "#4CAF50" : "#FF6B35" },
+                  ]}
+                >
+                  {monthlySummary.diff >= 0 ? "+" : ""}
+                  {monthlySummary.diff}日
+                </Text>
+                <Text style={[styles.summaryLabel, { color: colors.muted }]}>先月比</Text>
+              </View>
+              <View style={styles.summaryItem}>
+                <Text style={[styles.summaryValue, { color: colors.foreground }]}>
+                  {monthlySummary.achievementRate}%
+                </Text>
+                <Text style={[styles.summaryLabel, { color: colors.muted }]}>達成率</Text>
+              </View>
+            </View>
+            <Text style={[styles.summaryComment, { color: colors.foreground }]}>
+              {monthlySummary.comment}
+            </Text>
+          </View>
+        )}
+
         {/* Bar chart */}
         <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <Text style={[styles.sectionLabel, { color: colors.muted }]}>
@@ -243,6 +326,9 @@ export default function ReviewScreen() {
           </View>
         </View>
 
+        {/* Weekday chart */}
+        <WeekdayChart data={weekdayData} />
+
         {/* Reason ranking */}
         {stats.reasonRanking.length > 0 && (
           <View style={[styles.section, { backgroundColor: colors.surface }]}>
@@ -275,6 +361,19 @@ export default function ReviewScreen() {
               </View>
             ))}
           </View>
+        )}
+
+        {/* Share button (month tab only) */}
+        {tab === "month" && monthlySummary && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.shareBtn,
+              { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 },
+            ]}
+            onPress={handleShare}
+          >
+            <Text style={styles.shareBtnText}>月次レポートを共有</Text>
+          </Pressable>
         )}
 
         {/* Empty state */}
@@ -316,6 +415,11 @@ const styles = StyleSheet.create({
   kpiDiff: { fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 4 },
   section: { borderRadius: 16, padding: 16 },
   sectionLabel: { fontSize: 11, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 14 },
+  summaryGrid: { flexDirection: "row", justifyContent: "space-around", marginBottom: 12 },
+  summaryItem: { alignItems: "center" },
+  summaryValue: { fontSize: 22, fontWeight: "800" },
+  summaryLabel: { fontSize: 11, marginTop: 2 },
+  summaryComment: { fontSize: 13, textAlign: "center", lineHeight: 20 },
   chart: { flexDirection: "row", alignItems: "flex-end", height: 100, gap: 4 },
   chartBar: { flex: 1, alignItems: "center", justifyContent: "flex-end", gap: 4 },
   bar: { width: "100%", borderRadius: 4, minHeight: 4 },
@@ -333,6 +437,12 @@ const styles = StyleSheet.create({
   insightCard: { borderLeftWidth: 4, borderRadius: 12, padding: 14, gap: 6 },
   insightRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
   insightText: { fontSize: 13, lineHeight: 20, flex: 1 },
+  shareBtn: {
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  shareBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
   emptyCard: { borderRadius: 16, padding: 32, alignItems: "center", gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: "700" },
   emptySub: { fontSize: 13, textAlign: "center" },
