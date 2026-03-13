@@ -200,7 +200,20 @@ export default function HomeScreen() {
               const isToday = date === today;
               const conf = STATUS_CONFIG[rec.status];
               return (
-                <View key={date} style={styles.dayCell}>
+                <Pressable
+                  key={date}
+                  style={({ pressed }) => [styles.dayCell, pressed && { opacity: 0.6 }]}
+                  onPress={() => {
+                    if (Platform.OS !== "web") {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }
+                    if (date <= today) {
+                      router.navigate({ pathname: "/(tabs)/record", params: { date } });
+                    } else {
+                      router.navigate("/(tabs)/weekly");
+                    }
+                  }}
+                >
                   <Text style={[styles.dayLabel, isToday && { color: "#4A90D9", fontWeight: "800" }]}>
                     {getDayLabel(date)}
                   </Text>
@@ -216,7 +229,7 @@ export default function HomeScreen() {
                       <Text style={{ fontSize: 14 }}>{conf.emoji}</Text>
                     )}
                   </View>
-                </View>
+                </Pressable>
               );
             })}
           </View>
@@ -238,15 +251,15 @@ export default function HomeScreen() {
         <View style={styles.actionSection}>
           {todayStatus !== "kyukan" && (
             <Pressable
-              style={({ pressed }) => [styles.btnSecondary, pressed && { opacity: 0.8 }]}
+              style={({ pressed }) => [styles.btnNodrink, pressed && { opacity: 0.8 }]}
               onPress={handleNodrink}
             >
-              <Text style={[styles.btnSecondaryText, { color: "#4A90D9" }]}>✅ 今日は飲まない</Text>
+              <Text style={styles.btnNodrinkText}>✅ 今日は飲まない</Text>
             </Pressable>
           )}
           {todayStatus === "kyukan" && (
-            <View style={[styles.btnSecondary, { borderColor: "#4CAF50" }]}>
-              <Text style={[styles.btnSecondaryText, { color: "#4CAF50" }]}>✅ 今日は休肝日に設定済み</Text>
+            <View style={styles.btnNodrinkDone}>
+              <Text style={styles.btnNodrinkText}>✅ 今日は休肝日に設定済み</Text>
             </View>
           )}
           <Pressable
@@ -353,13 +366,17 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   btnDrinkText: { fontSize: 14, fontWeight: "500" },
-  btnSecondary: {
-    borderRadius: 14, padding: 14,
+  btnNodrink: {
+    borderRadius: 14, padding: 18,
     alignItems: "center",
-    borderWidth: 2, borderColor: "#4A90D9",
-    backgroundColor: "transparent",
+    backgroundColor: "#4A90D9",
   },
-  btnSecondaryText: { fontSize: 16, fontWeight: "700" },
+  btnNodrinkDone: {
+    borderRadius: 14, padding: 18,
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
+  },
+  btnNodrinkText: { fontSize: 18, fontWeight: "700", color: "#fff" },
   btnRow: { flexDirection: "row", gap: 10 },
   btnGhost: {
     flex: 1, borderRadius: 14, padding: 14,

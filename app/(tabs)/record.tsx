@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -55,8 +56,15 @@ export default function RecordScreen() {
   const colors = useColors();
   const { today, getRecord, patchRecord } = useAppStore();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ date?: string }>();
 
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedDate, setSelectedDate] = useState(params.date ?? today);
+
+  useEffect(() => {
+    if (params.date) {
+      setSelectedDate(params.date);
+    }
+  }, [params.date]);
   const isToday = selectedDate === today;
   const canGoForward = selectedDate < today;
 
