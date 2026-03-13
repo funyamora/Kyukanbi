@@ -30,6 +30,14 @@ export interface AppSettings {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** ローカルタイムゾーンで "YYYY-MM-DD" を返す（toISOStringはUTC基準なので使わない） */
+export function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 const STORE_KEY = "kyukoubi_store_v1";
 const SETTINGS_KEY = "kyukoubi_settings_v1";
 
@@ -44,7 +52,7 @@ export function defaultSettings(): AppSettings {
 }
 
 export function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalDateStr(new Date());
 }
 
 export function getWeekDates(referenceDate?: Date): string[] {
@@ -56,7 +64,7 @@ export function getWeekDates(referenceDate?: Date): string[] {
   return Array.from({ length: 7 }, (_, i) => {
     const dd = new Date(monday);
     dd.setDate(monday.getDate() + i);
-    return dd.toISOString().slice(0, 10);
+    return toLocalDateStr(dd);
   });
 }
 
@@ -188,7 +196,7 @@ function weekGoalMet(
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    const key = d.toISOString().slice(0, 10);
+    const key = toLocalDateStr(d);
     if (records[key]?.status === "kyukan") count++;
   }
   return count >= goalDays;
@@ -295,7 +303,7 @@ export function computeWeekdayAverages(
   for (let i = 0; i < 28; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+    const key = toLocalDateStr(d);
     const r = records[key];
     if (r && r.actualDrinks !== null) {
       const jsDay = d.getDay(); // 0=Sun
@@ -362,7 +370,7 @@ function getMonthDatesForSummary(year: number, month: number): string[] {
   const days: string[] = [];
   const d = new Date(year, month, 1);
   while (d.getMonth() === month) {
-    days.push(d.toISOString().slice(0, 10));
+    days.push(toLocalDateStr(d));
     d.setDate(d.getDate() + 1);
   }
   return days;

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   Platform,
@@ -16,10 +16,13 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useAppStore } from "@/lib/app-context";
 
+const REMINDER_TIME_OPTIONS = ["18:00", "19:00", "20:00", "21:00", "22:00"];
+
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { settings, patchSettings, resetAllData } = useAppStore();
+  const [showTimeOptions, setShowTimeOptions] = useState(false);
 
   const hapticToggle = useCallback(() => {
     if (Platform.OS !== "web") {
@@ -162,8 +165,48 @@ export default function SettingsScreen() {
               <View style={[styles.divider, { backgroundColor: colors.border }]} />
               <View style={styles.row}>
                 <Text style={[styles.rowLabel, { color: colors.foreground }]}>リマインダー時刻</Text>
-                <Text style={[styles.timeDisplay, { color: colors.primary }]}>{settings.reminderTime}</Text>
+                <Pressable
+                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
+                  onPress={() => setShowTimeOptions((v) => !v)}
+                >
+                  <Text style={[styles.timeDisplay, { color: colors.primary }]}>
+                    {settings.reminderTime} ▼
+                  </Text>
+                </Pressable>
               </View>
+              {showTimeOptions && (
+                <View style={styles.timeOptionsRow}>
+                  {REMINDER_TIME_OPTIONS.map((time) => {
+                    const isSelected = settings.reminderTime === time;
+                    return (
+                      <Pressable
+                        key={time}
+                        style={[
+                          styles.timeOptionBtn,
+                          {
+                            backgroundColor: isSelected ? colors.primary : colors.background,
+                            borderColor: isSelected ? colors.primary : colors.border,
+                          },
+                        ]}
+                        onPress={() => {
+                          hapticTap();
+                          patchSettings({ reminderTime: time });
+                          setShowTimeOptions(false);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.timeOptionText,
+                            { color: isSelected ? "#fff" : colors.foreground },
+                          ]}
+                        >
+                          {time}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
             </>
           )}
 
@@ -249,6 +292,14 @@ const styles = StyleSheet.create({
   stepperBtnText: { fontSize: 20, fontWeight: "700" },
   stepperValue: { fontSize: 20, fontWeight: "800", minWidth: 24, textAlign: "center" },
   timeDisplay: { fontSize: 16, fontWeight: "700" },
+  timeOptionsRow: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
+  timeOptionBtn: {
+    borderRadius: 10,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  timeOptionText: { fontSize: 14, fontWeight: "600" },
   phaseNote: { fontSize: 12, paddingHorizontal: 4, marginTop: 4 },
   resetBtn: {
     borderRadius: 12,

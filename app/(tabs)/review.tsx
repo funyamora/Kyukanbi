@@ -20,6 +20,7 @@ import {
   computeWeekdayAverages,
   getWeekDates,
   hasConsecutiveKyukan,
+  toLocalDateStr,
 } from "@/lib/store";
 
 type TabType = "week" | "month";
@@ -28,7 +29,7 @@ function getMonthDates(year: number, month: number): string[] {
   const days: string[] = [];
   const d = new Date(year, month, 1);
   while (d.getMonth() === month) {
-    days.push(d.toISOString().slice(0, 10));
+    days.push(toLocalDateStr(d));
     d.setDate(d.getDate() + 1);
   }
   return days;

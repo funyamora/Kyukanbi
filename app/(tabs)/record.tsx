@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,7 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useAppStore } from "@/lib/app-context";
-import { formatDateJP } from "@/lib/store";
+import { formatDateJP, toLocalDateStr } from "@/lib/store";
 
 const DRINK_OPTIONS = [
   { value: 1, label: "1杯", emoji: "🥃" },
@@ -46,7 +48,7 @@ type SatisfactionValue = "great" | "okay" | "regret" | "toomuch";
 function shiftDate(dateStr: string, days: number): string {
   const d = new Date(dateStr);
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return toLocalDateStr(d);
 }
 
 export default function RecordScreen() {
@@ -151,9 +153,14 @@ export default function RecordScreen() {
         )}
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {/* Declared vs actual comparison */}
         {declared !== null && (
@@ -338,6 +345,7 @@ export default function RecordScreen() {
           />
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Save button */}
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16, backgroundColor: colors.surface, borderTopColor: colors.border }]}>

@@ -4,6 +4,7 @@ import {
   computeWeekdayAverages,
   computeMonthlySummary,
   defaultRecord,
+  toLocalDateStr,
   type DailyRecord,
 } from "../lib/store";
 
@@ -29,7 +30,7 @@ describe("computeWeekdayAverages", () => {
     for (let i = 0; i < 28; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
+      const key = toLocalDateStr(d);
       const jsDay = d.getDay();
       // Give Mondays (jsDay=1) 4 drinks, others 0
       if (jsDay === 1) {

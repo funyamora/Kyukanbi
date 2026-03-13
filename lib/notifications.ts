@@ -4,7 +4,7 @@ import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import type { AppStore, DailyRecord } from "./store";
-import { getWeekDates, hasConsecutiveKyukan } from "./store";
+import { getWeekDates, hasConsecutiveKyukan, toLocalDateStr } from "./store";
 
 const isExpoGo = Constants.executionEnvironment === "storeClient";
 const PERMISSION_REQUESTED_KEY = "notification_permission_requested";
@@ -44,7 +44,7 @@ export async function scheduleReminder(time: string, store: AppStore): Promise<v
   await cancelReminder();
 
   const [hour, minute] = time.split(":").map(Number);
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLocalDateStr(new Date());
   const status = store.records[today]?.status;
 
   let title: string;
