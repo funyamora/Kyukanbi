@@ -72,7 +72,6 @@ export default function RecordScreen() {
   const [actualDrinks, setActualDrinks] = useState<number | null>(rec.actualDrinks);
   const [satisfaction, setSatisfaction] = useState<SatisfactionValue | null>(rec.satisfaction);
   const [memo, setMemo] = useState(rec.memo ?? "");
-  const [saved, setSaved] = useState(false);
   const [showDetailOptions, setShowDetailOptions] = useState(
     rec.actualDrinks !== null && rec.actualDrinks >= 4
   );
@@ -103,17 +102,10 @@ export default function RecordScreen() {
     setActualDrinks(r.actualDrinks);
     setSatisfaction(r.satisfaction);
     setMemo(r.memo ?? "");
-    setSaved(false);
     const hasDetail = r.actualDrinks !== null && r.actualDrinks >= 4;
     setShowDetailOptions(hasDetail);
     detailHeight.value = hasDetail ? 1 : 0;
   }, [selectedDate, getRecord, detailHeight]);
-
-  const handleSave = useCallback(async () => {
-    await patchRecord(selectedDate, { actualDrinks, satisfaction, memo });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }, [selectedDate, patchRecord, actualDrinks, satisfaction, memo]);
 
   const declared = rec.declaredLimit;
   const isOver = declared !== null && actualDrinks !== null && actualDrinks > declared;
@@ -166,7 +158,7 @@ export default function RecordScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 20 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -248,10 +240,12 @@ export default function RecordScreen() {
                       if (!showDetailOptions) {
                         setActualDrinks(4);
                         openDetailOptions();
+                        patchRecord(selectedDate, { actualDrinks: 4 });
                       }
                     } else {
                       setActualDrinks(opt.value);
                       closeDetailOptions();
+                      patchRecord(selectedDate, { actualDrinks: opt.value });
                     }
                   }}
                 >
@@ -277,7 +271,10 @@ export default function RecordScreen() {
                         backgroundColor: isSelected ? "#FFF0EB" : colors.background,
                       },
                     ]}
-                    onPress={() => setActualDrinks(opt.value)}
+                    onPress={() => {
+                      setActualDrinks(opt.value);
+                      patchRecord(selectedDate, { actualDrinks: opt.value });
+                    }}
                   >
                     <Text
                       style={[
@@ -303,6 +300,7 @@ export default function RecordScreen() {
             onPress={() => {
               setActualDrinks(0);
               closeDetailOptions();
+              patchRecord(selectedDate, { actualDrinks: 0 });
             }}
           >
             <Text style={[styles.zeroBtnText, { color: actualDrinks === 0 ? "#4CAF50" : colors.muted }]}>
@@ -327,7 +325,10 @@ export default function RecordScreen() {
                       backgroundColor: isSelected ? "#EEF6FF" : colors.background,
                     },
                   ]}
-                  onPress={() => setSatisfaction(opt.value)}
+                  onPress={() => {
+                    setSatisfaction(opt.value);
+                    patchRecord(selectedDate, { satisfaction: opt.value });
+                  }}
                 >
                   <Text style={{ fontSize: 28 }}>{opt.emoji}</Text>
                   <Text style={[styles.satisfactionLabel, { color: isSelected ? "#4A90D9" : colors.muted }]}>
@@ -348,6 +349,7 @@ export default function RecordScreen() {
             placeholderTextColor={colors.muted}
             value={memo}
             onChangeText={setMemo}
+            onBlur={() => patchRecord(selectedDate, { memo })}
             multiline
             returnKeyType="done"
           />
@@ -355,19 +357,6 @@ export default function RecordScreen() {
       </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Save button */}
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16, backgroundColor: colors.surface, borderTopColor: colors.border }]}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.saveBtn,
-            { backgroundColor: saved ? "#4CAF50" : "#4A90D9" },
-            pressed && { opacity: 0.85 },
-          ]}
-          onPress={handleSave}
-        >
-          <Text style={styles.saveBtnText}>{saved ? "✅ 保存しました！" : "✅ 記録を保存する"}</Text>
-        </Pressable>
-      </View>
     </ScreenContainer>
   );
 }
@@ -429,7 +418,4 @@ const styles = StyleSheet.create({
     borderRadius: 10, borderWidth: 1,
     padding: 12, fontSize: 14, minHeight: 60,
   },
-  bottomBar: { padding: 16, paddingTop: 12, borderTopWidth: 1 },
-  saveBtn: { borderRadius: 14, padding: 16, alignItems: "center" },
-  saveBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
 });
