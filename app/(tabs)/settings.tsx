@@ -16,7 +16,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useAppStore } from "@/lib/app-context";
 
-const REMINDER_TIME_OPTIONS = ["18:00", "19:00", "20:00", "21:00", "22:00"];
+const REMINDER_TIME_OPTIONS = ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
 
 export default function SettingsScreen() {
   const colors = useColors();

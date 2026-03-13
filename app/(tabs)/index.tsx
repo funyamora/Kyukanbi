@@ -250,10 +250,10 @@ export default function HomeScreen() {
             </View>
           )}
           <Pressable
-            style={({ pressed }) => [styles.btnPrimary, { backgroundColor: "#FF6B35" }, pressed && { opacity: 0.85 }]}
+            style={({ pressed }) => [styles.btnDrink, { borderColor: colors.muted }, pressed && { opacity: 0.6 }]}
             onPress={handleDrink}
           >
-            <Text style={styles.btnPrimaryText}>🍺 今日は飲む（上限を宣言する）</Text>
+            <Text style={[styles.btnDrinkText, { color: colors.muted }]}>🍺 今日は飲む（上限を宣言する）</Text>
           </Pressable>
           <View style={styles.btnRow}>
             <Pressable
@@ -346,11 +346,13 @@ const styles = StyleSheet.create({
   progressLabel: { fontSize: 13 },
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   actionSection: { gap: 10 },
-  btnPrimary: {
-    borderRadius: 14, padding: 16,
+  btnDrink: {
+    borderRadius: 14, padding: 14,
     alignItems: "center",
+    borderWidth: 1,
+    backgroundColor: "transparent",
   },
-  btnPrimaryText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  btnDrinkText: { fontSize: 14, fontWeight: "500" },
   btnSecondary: {
     borderRadius: 14, padding: 14,
     alignItems: "center",

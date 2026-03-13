@@ -15,7 +15,7 @@ import { useColors } from "@/hooks/use-colors";
 import { useAppStore } from "@/lib/app-context";
 import { requestNotificationPermission } from "@/lib/notifications";
 
-const TIME_OPTIONS = ["19:00", "20:00", "21:00", "22:00"];
+const TIME_OPTIONS = ["18:00", "19:00", "20:00", "21:00", "22:00", "23:00"];
 
 export default function OnboardingScreen() {
   const colors = useColors();
