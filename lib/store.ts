@@ -214,24 +214,26 @@ export function checkNewBadges(
   const newBadges: string[] = [];
   const earned = new Set(existingBadges);
 
-  // first_kyukan: いずれかのレコードが kyukan
+  // first_kyukan: いずれかのレコードが kyukan かつ満足度記録済み
   if (!earned.has("first_kyukan")) {
-    if (Object.values(records).some((r) => r.status === "kyukan")) {
+    if (Object.values(records).some((r) => r.status === "kyukan" && r.satisfaction !== null)) {
       newBadges.push("first_kyukan");
     }
   }
 
-  // first_consecutive: 日付順で2日連続 kyukan
+  // first_consecutive: 日付順で2日連続 kyukan（両日とも満足度記録済み）
   if (!earned.has("first_consecutive")) {
     const sortedDates = Object.keys(records).sort();
     for (let i = 1; i < sortedDates.length; i++) {
       const prev = new Date(sortedDates[i - 1]);
       const curr = new Date(sortedDates[i]);
       const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      const rPrev = records[sortedDates[i - 1]];
+      const rCurr = records[sortedDates[i]];
       if (
         diffDays === 1 &&
-        records[sortedDates[i - 1]]?.status === "kyukan" &&
-        records[sortedDates[i]]?.status === "kyukan"
+        rPrev?.status === "kyukan" && rPrev?.satisfaction !== null &&
+        rCurr?.status === "kyukan" && rCurr?.satisfaction !== null
       ) {
         newBadges.push("first_consecutive");
         break;

@@ -45,18 +45,35 @@ describe("computeWeekdayAverages", () => {
 });
 
 describe("checkNewBadges", () => {
-  it("unlocks first_kyukan with one kyukan record", () => {
+  it("does not unlock first_kyukan without satisfaction", () => {
     const records: Record<string, DailyRecord> = {
       "2026-03-01": makeRecord("2026-03-01", { status: "kyukan" }),
+    };
+    const result = checkNewBadges(records, [], 2);
+    expect(result).not.toContain("first_kyukan");
+  });
+
+  it("unlocks first_kyukan with kyukan record and satisfaction", () => {
+    const records: Record<string, DailyRecord> = {
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).toContain("first_kyukan");
   });
 
-  it("unlocks first_consecutive with 2 consecutive kyukan days", () => {
+  it("does not unlock first_consecutive without satisfaction on both days", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
       "2026-03-02": makeRecord("2026-03-02", { status: "kyukan" }),
+    };
+    const result = checkNewBadges(records, [], 2);
+    expect(result).not.toContain("first_consecutive");
+  });
+
+  it("unlocks first_consecutive with 2 consecutive kyukan days with satisfaction", () => {
+    const records: Record<string, DailyRecord> = {
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
+      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan", satisfaction: "okay" }),
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).toContain("first_consecutive");
@@ -64,7 +81,7 @@ describe("checkNewBadges", () => {
 
   it("does not return already earned badges", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
     };
     const result = checkNewBadges(records, ["first_kyukan"], 2);
     expect(result).not.toContain("first_kyukan");
