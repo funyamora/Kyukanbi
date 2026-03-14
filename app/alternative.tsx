@@ -67,7 +67,7 @@ export default function AlternativeScreen() {
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.back()}
         >
-          <Text style={{ fontSize: 16, color: "#4A90D9" }}>‹ 戻る</Text>
+          <Text style={{ fontSize: 16, color: colors.primary }}>‹ 戻る</Text>
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>代替行動</Text>
         <View style={{ width: 60 }} />
@@ -99,8 +99,8 @@ export default function AlternativeScreen() {
                       style={[
                         styles.chip,
                         {
-                          backgroundColor: isSelected ? "#667EEA" : colors.background,
-                          borderColor: isSelected ? "#667EEA" : colors.border,
+                          backgroundColor: isSelected ? colors.purple : colors.background,
+                          borderColor: isSelected ? colors.purple : colors.border,
                         },
                       ]}
                       onPress={() => setSelectedMood(m.id)}
@@ -142,10 +142,10 @@ export default function AlternativeScreen() {
       <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 16, backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         <View style={styles.btnRow}>
           <Pressable
-            style={({ pressed }) => [styles.btnHalf, { borderColor: "#FF6B35", borderWidth: 2 }, pressed && { opacity: 0.8 }]}
+            style={({ pressed }) => [styles.btnHalf, { borderColor: colors.orange, borderWidth: 2 }, pressed && { opacity: 0.8 }]}
             onPress={handleDrinkAfterAll}
           >
-            <Text style={{ fontSize: 14, fontWeight: "700", color: "#FF6B35" }}>🍺 やっぱり飲む</Text>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.orange }}>🍺 やっぱり飲む</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.btnHalf, { backgroundColor: colors.background }, pressed && { opacity: 0.8 }]}

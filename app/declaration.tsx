@@ -74,7 +74,7 @@ export default function DeclarationScreen() {
           style={({ pressed }) => [styles.backBtn, pressed && { opacity: 0.6 }]}
           onPress={() => router.back()}
         >
-          <Text style={{ fontSize: 16, color: "#4A90D9" }}>‹ 戻る</Text>
+          <Text style={{ fontSize: 16, color: colors.primary }}>‹ 戻る</Text>
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.foreground }]}>飲酒前の宣言</Text>
         <View style={{ width: 60 }} />
@@ -102,12 +102,12 @@ export default function DeclarationScreen() {
                   key={opt.value}
                   style={[
                     styles.limitCard,
-                    { borderColor: isSelected ? "#FF6B35" : colors.border, backgroundColor: isSelected ? "#FFF0EB" : colors.background },
+                    { borderColor: isSelected ? colors.orange : colors.border, backgroundColor: isSelected ? "#FFF0EB" : colors.background },
                   ]}
                   onPress={() => setSelectedLimit(opt.value)}
                 >
                   <Text style={{ fontSize: 22, marginBottom: 4 }}>{opt.emoji}</Text>
-                  <Text style={[styles.limitLabel, { color: isSelected ? "#FF6B35" : colors.foreground }]}>
+                  <Text style={[styles.limitLabel, { color: isSelected ? colors.orange : colors.foreground }]}>
                     {opt.label}
                   </Text>
                 </Pressable>
@@ -128,8 +128,8 @@ export default function DeclarationScreen() {
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: isSelected ? "#4A90D9" : colors.background,
-                      borderColor: isSelected ? "#4A90D9" : colors.border,
+                      backgroundColor: isSelected ? colors.primary : colors.background,
+                      borderColor: isSelected ? colors.primary : colors.border,
                     },
                   ]}
                   onPress={() => setSelectedReason(r)}
@@ -161,7 +161,7 @@ export default function DeclarationScreen() {
       {/* Bottom actions */}
       <View style={[styles.bottomActions, { paddingBottom: insets.bottom + 16, backgroundColor: colors.surface, borderTopColor: colors.border }]}>
         <Pressable
-          style={({ pressed }) => [styles.btnPrimary, { backgroundColor: "#FF6B35" }, pressed && { opacity: 0.85 }]}
+          style={({ pressed }) => [styles.btnPrimary, { backgroundColor: colors.orange }, pressed && { opacity: 0.85 }]}
           onPress={handleConfirm}
         >
           <Text style={styles.btnPrimaryText}>🍺 この条件で飲む</Text>
@@ -170,7 +170,7 @@ export default function DeclarationScreen() {
           style={({ pressed }) => [styles.btnSecondary, pressed && { opacity: 0.8 }]}
           onPress={handleAlternative}
         >
-          <Text style={[styles.btnSecondaryText, { color: "#4A90D9" }]}>💡 代替行動を見る</Text>
+          <Text style={[styles.btnSecondaryText, { color: colors.primary }]}>💡 代替行動を見る</Text>
         </Pressable>
         <Pressable
           style={({ pressed }) => [styles.btnText, pressed && { opacity: 0.6 }]}
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   btnPrimary: { borderRadius: 14, padding: 16, alignItems: "center" },
   btnPrimaryText: { fontSize: 16, fontWeight: "700", color: "#fff" },
-  btnSecondary: { borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 2, borderColor: "#4A90D9" },
+  btnSecondary: { borderRadius: 14, padding: 14, alignItems: "center", borderWidth: 2, borderColor: "#4A90D9" }, // Static StyleSheet
   btnSecondaryText: { fontSize: 15, fontWeight: "700" },
   btnText: { alignItems: "center", padding: 8 },
   btnTextLabel: { fontSize: 14 },
