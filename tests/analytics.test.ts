@@ -23,6 +23,12 @@ describe("computeWeekdayAverages", () => {
     result.forEach((d) => expect(d.avg).toBe(0));
   });
 
+  it("returns all 7 correct Japanese day labels", () => {
+    const result = computeWeekdayAverages({});
+    const labels = result.map((d) => d.label);
+    expect(labels).toEqual(["月", "火", "水", "木", "金", "土", "日"]);
+  });
+
   it("computes averages correctly for given records", () => {
     // Create records for 4 Mondays with known drinks
     const records: Record<string, DailyRecord> = {};
@@ -95,6 +101,41 @@ describe("checkNewBadges", () => {
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).toContain("first_weekly_goal");
+  });
+
+  it("unlocks three_weeks_streak when 3 consecutive weeks meet goal", () => {
+    const records: Record<string, DailyRecord> = {};
+    // Week 1: Mon 2026-02-16 to Sun 2026-02-22
+    records["2026-02-16"] = makeRecord("2026-02-16", { status: "kyukan", actualDrinks: 0 });
+    records["2026-02-17"] = makeRecord("2026-02-17", { status: "kyukan", actualDrinks: 0 });
+    // Week 2: Mon 2026-02-23 to Sun 2026-03-01
+    records["2026-02-23"] = makeRecord("2026-02-23", { status: "kyukan", actualDrinks: 0 });
+    records["2026-02-24"] = makeRecord("2026-02-24", { status: "kyukan", actualDrinks: 0 });
+    // Week 3: Mon 2026-03-02 to Sun 2026-03-08
+    records["2026-03-02"] = makeRecord("2026-03-02", { status: "kyukan", actualDrinks: 0 });
+    records["2026-03-03"] = makeRecord("2026-03-03", { status: "kyukan", actualDrinks: 0 });
+
+    const result = checkNewBadges(records, [], 2);
+    expect(result).toContain("three_weeks_streak");
+  });
+
+  it("unlocks one_month_streak when 4 consecutive weeks meet goal", () => {
+    const records: Record<string, DailyRecord> = {};
+    // Week 1: Mon 2026-02-09 to Sun 2026-02-15
+    records["2026-02-09"] = makeRecord("2026-02-09", { status: "kyukan", actualDrinks: 0 });
+    records["2026-02-10"] = makeRecord("2026-02-10", { status: "kyukan", actualDrinks: 0 });
+    // Week 2: Mon 2026-02-16 to Sun 2026-02-22
+    records["2026-02-16"] = makeRecord("2026-02-16", { status: "kyukan", actualDrinks: 0 });
+    records["2026-02-17"] = makeRecord("2026-02-17", { status: "kyukan", actualDrinks: 0 });
+    // Week 3: Mon 2026-02-23 to Sun 2026-03-01
+    records["2026-02-23"] = makeRecord("2026-02-23", { status: "kyukan", actualDrinks: 0 });
+    records["2026-02-24"] = makeRecord("2026-02-24", { status: "kyukan", actualDrinks: 0 });
+    // Week 4: Mon 2026-03-02 to Sun 2026-03-08
+    records["2026-03-02"] = makeRecord("2026-03-02", { status: "kyukan", actualDrinks: 0 });
+    records["2026-03-03"] = makeRecord("2026-03-03", { status: "kyukan", actualDrinks: 0 });
+
+    const result = checkNewBadges(records, [], 2);
+    expect(result).toContain("one_month_streak");
   });
 });
 
