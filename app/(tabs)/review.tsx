@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import {
+  DimensionValue,
   Pressable,
   ScrollView,
   Share,
@@ -341,14 +342,14 @@ export default function ReviewScreen() {
             <Text style={[styles.sectionLabel, { color: colors.muted }]}>飲みたい理由ランキング</Text>
             {stats.reasonRanking.map((item, idx) => {
               const maxCount = stats.reasonRanking[0].count;
-              const barW = `${(item.count / maxCount) * 100}%`;
+              const barW: DimensionValue = `${(item.count / maxCount) * 100}%`;
               const rankColors = ["#F0A500", "#8E8E93", "#CD7F32"];
               return (
                 <View key={item.reason} style={styles.rankRow}>
                   <Text style={[styles.rankNum, { color: rankColors[idx] ?? colors.muted }]}>{idx + 1}</Text>
                   <Text style={[styles.rankReason, { color: colors.foreground }]}>{item.reason}</Text>
                   <View style={styles.rankBarWrap}>
-                    <View style={[styles.rankBar, { width: barW as any, backgroundColor: "#4A90D9" }]} />
+                    <View style={[styles.rankBar, { width: barW, backgroundColor: "#4A90D9" }]} />
                   </View>
                   <Text style={[styles.rankCount, { color: colors.muted }]}>{item.count}回</Text>
                 </View>

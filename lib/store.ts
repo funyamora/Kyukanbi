@@ -216,6 +216,7 @@ export function checkNewBadges(
 ): string[] {
   const newBadges: string[] = [];
   const earned = new Set(existingBadges);
+  const sortedDates = Object.keys(records).sort();
 
   // first_kyukan: いずれかのレコードが kyukan かつ満足度記録済み
   if (!earned.has("first_kyukan")) {
@@ -226,7 +227,6 @@ export function checkNewBadges(
 
   // first_consecutive: 日付順で2日連続 kyukan（両日とも満足度記録済み）
   if (!earned.has("first_consecutive")) {
-    const sortedDates = Object.keys(records).sort();
     for (let i = 1; i < sortedDates.length; i++) {
       const prev = new Date(sortedDates[i - 1]);
       const curr = new Date(sortedDates[i]);
@@ -246,10 +246,9 @@ export function checkNewBadges(
 
   // first_weekly_goal: いずれかの週で目標達成
   if (!earned.has("first_weekly_goal")) {
-    const allDates = Object.keys(records).sort();
-    if (allDates.length > 0) {
-      const firstMonday = getMonday(new Date(allDates[0]));
-      const lastDate = new Date(allDates[allDates.length - 1]);
+    if (sortedDates.length > 0) {
+      const firstMonday = getMonday(new Date(sortedDates[0]));
+      const lastDate = new Date(sortedDates[sortedDates.length - 1]);
       const d = new Date(firstMonday);
       while (d <= lastDate) {
         if (weekGoalMet(records, d, weeklyGoalDays)) {
@@ -263,10 +262,9 @@ export function checkNewBadges(
 
   // three_weeks_streak / one_month_streak: N週連続で目標達成
   if (!earned.has("three_weeks_streak") || !earned.has("one_month_streak")) {
-    const allDates = Object.keys(records).sort();
-    if (allDates.length > 0) {
-      const firstMonday = getMonday(new Date(allDates[0]));
-      const lastDate = new Date(allDates[allDates.length - 1]);
+    if (sortedDates.length > 0) {
+      const firstMonday = getMonday(new Date(sortedDates[0]));
+      const lastDate = new Date(sortedDates[sortedDates.length - 1]);
       let streak = 0;
       let maxStreak = 0;
       const d = new Date(firstMonday);
