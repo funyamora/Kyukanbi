@@ -68,6 +68,7 @@ kyukoubi-tsukuru/
 │   │   ├── record.tsx           ← 記録画面
 │   │   ├── review.tsx           ← 振り返り画面
 │   │   └── settings.tsx         ← 設定画面
+│   ├── confirm-drink.tsx       ← 飲酒確認画面（「本当に飲みますか？」モーダル）
 │   ├── declaration.tsx          ← 飲酒前宣言画面（モーダル遷移）
 │   └── alternative.tsx          ← 代替行動画面（モーダル遷移）
 │
@@ -273,6 +274,28 @@ const MAPPING = {
 1. `components/ui/icon-symbol.tsx` にアイコンマッピングを追加
 2. `app/(tabs)/新画面名.tsx` を作成
 3. `app/(tabs)/_layout.tsx` に `<Tabs.Screen>` を追加
+
+---
+
+## 飲酒確認画面の豆知識リンク管理
+
+ホーム画面の「今日は飲む」ボタンを押すと表示される確認画面（`app/confirm-drink.tsx`）には、飲酒を思いとどまらせるための豆知識リンクがランダムで1つ表示されます。
+
+リンクの追加・変更は `app/confirm-drink.tsx` の `TRIVIA_LINKS` 配列を直接編集してください。
+
+```typescript
+const TRIVIA_LINKS: TriviaLink[] = [
+  {
+    title: "表示タイトル",
+    description: "簡単な説明文（1〜2行）",
+    url: "https://...",
+  },
+  // ...
+];
+```
+
+- 信頼性の高い公的機関の情報（厚労省、e-ヘルスネット等）を優先する
+- `url` は `Linking.openURL` でブラウザ起動されるため、外部URLを指定する
 
 ---
 

@@ -99,11 +99,7 @@ export default function HomeScreen() {
   }, [today, patchRecord]);
 
   const handleDrink = useCallback(() => {
-    router.push("/declaration");
-  }, [router]);
-
-  const handleAlternative = useCallback(() => {
-    router.push("/alternative");
+    router.push("/confirm-drink");
   }, [router]);
 
   // 今日飲むとどうなるかのメッセージ
@@ -276,14 +272,6 @@ export default function HomeScreen() {
           >
             <Text style={[styles.btnDrinkText, { color: colors.muted }]}>🍺 今日は飲む（上限を宣言する）</Text>
           </Pressable>
-          <View style={styles.btnRow}>
-            <Pressable
-              style={({ pressed }) => [styles.btnGhost, { backgroundColor: colors.background }, pressed && { opacity: 0.7 }]}
-              onPress={handleAlternative}
-            >
-              <Text style={[styles.btnGhostText, { color: colors.foreground }]}>💡 代替行動を見る</Text>
-            </Pressable>
-          </View>
         </View>
       </ScrollView>
     </ScreenContainer>
@@ -385,10 +373,4 @@ const styles = StyleSheet.create({
     backgroundColor: "#4CAF50",
   },
   btnNodrinkText: { fontSize: 18, fontWeight: "700", color: "#fff" },
-  btnRow: { flexDirection: "row", gap: 10 },
-  btnGhost: {
-    flex: 1, borderRadius: 14, padding: 14,
-    alignItems: "center",
-  },
-  btnGhostText: { fontSize: 14, fontWeight: "600" },
 });
