@@ -198,7 +198,15 @@ export default function HomeScreen() {
             {weekDates.map((date) => {
               const rec = getRecord(date);
               const isToday = date === today;
-              const conf = STATUS_CONFIG[rec.status];
+              const displayStatus: DayStatus =
+                date < today
+                  ? rec.actualDrinks !== null
+                    ? rec.actualDrinks === 0 ? "kyukan" : "ok"
+                    : "undecided"
+                  : date === today && rec.actualDrinks !== null
+                    ? rec.actualDrinks === 0 ? "kyukan" : "ok"
+                    : rec.status;
+              const conf = STATUS_CONFIG[displayStatus];
               return (
                 <Pressable
                   key={date}
