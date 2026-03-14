@@ -52,7 +52,14 @@ export default function DeclarationScreen() {
   }, [router]);
 
   const handleCancel = useCallback(async () => {
-    await patchRecord(today, { status: "kyukan" });
+    await patchRecord(today, {
+      status: "kyukan",
+      declaredLimit: null,
+      drinkingReason: null,
+      actualDrinks: null,
+      satisfaction: null,
+      alternativeAction: null,
+    });
     router.back();
   }, [today, patchRecord, router]);
 

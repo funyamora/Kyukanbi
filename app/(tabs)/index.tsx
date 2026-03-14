@@ -95,7 +95,14 @@ export default function HomeScreen() {
   }));
 
   const handleNodrink = useCallback(async () => {
-    await patchRecord(today, { status: "kyukan" });
+    await patchRecord(today, {
+      status: "kyukan",
+      declaredLimit: null,
+      drinkingReason: null,
+      actualDrinks: null,
+      satisfaction: null,
+      alternativeAction: null,
+    });
   }, [today, patchRecord]);
 
   const handleDrink = useCallback(() => {

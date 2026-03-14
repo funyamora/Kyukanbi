@@ -84,7 +84,14 @@ export default function ConfirmDrinkScreen() {
   }, [router]);
 
   const handleNoDrink = useCallback(async () => {
-    await patchRecord(today, { status: "kyukan" });
+    await patchRecord(today, {
+      status: "kyukan",
+      declaredLimit: null,
+      drinkingReason: null,
+      actualDrinks: null,
+      satisfaction: null,
+      alternativeAction: null,
+    });
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
