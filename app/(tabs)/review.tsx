@@ -133,7 +133,11 @@ export default function ReviewScreen() {
 
   const periodLabel = tab === "week"
     ? weekDates.length >= 7
-      ? `${new Date(weekDates[0]).getMonth() + 1}月${new Date(weekDates[0]).getDate()}日（月）〜 ${new Date(weekDates[6]).getMonth() + 1}月${new Date(weekDates[6]).getDate()}日（日）`
+      ? (() => {
+          const dow = ["日","月","火","水","木","金","土"];
+          const sd = new Date(weekDates[0]), ed = new Date(weekDates[6]);
+          return `${sd.getMonth() + 1}/${sd.getDate()}(${dow[sd.getDay()]})〜${ed.getMonth() + 1}/${ed.getDate()}(${dow[ed.getDay()]})`;
+        })()
       : ""
     : `${monthYear.getFullYear()}年${monthYear.getMonth() + 1}月`;
 

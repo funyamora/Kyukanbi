@@ -223,12 +223,20 @@ export default function WeeklyScreen() {
     [patchRecord]
   );
 
-  const weekLabel = () => {
-    if (weekDates.length < 7) return "";
-    const s = weekDates[0];
-    const e = weekDates[6];
-    const sd = new Date(s), ed = new Date(e);
-    return `${sd.getMonth() + 1}月${sd.getDate()}日（月）〜 ${ed.getMonth() + 1}月${ed.getDate()}日（日）`;
+  const shortDateRange = (dates: string[]) => {
+    if (dates.length < 7) return "";
+    const dow = ["日","月","火","水","木","金","土"];
+    const sd = new Date(dates[0]), ed = new Date(dates[6]);
+    return `${sd.getMonth() + 1}/${sd.getDate()}(${dow[sd.getDay()]})〜${ed.getMonth() + 1}/${ed.getDate()}(${dow[ed.getDay()]})`;
+  };
+
+  const weekLabel = () => shortDateRange(weekDates);
+
+  const weekNavLabel = () => {
+    if (weekOffset === 0) return "今週";
+    if (weekOffset === 1) return "来週";
+    if (weekOffset === -1) return "先週";
+    return shortDateRange(weekDates);
   };
 
   return (
@@ -256,7 +264,7 @@ export default function WeeklyScreen() {
                 <Text style={{ fontSize: 18, color: colors.foreground }}>‹</Text>
               </Pressable>
               <Text style={[styles.weekNavLabel, { color: colors.foreground }]}>
-                {weekOffset === 0 ? "今週" : weekOffset > 0 ? `+${weekOffset}週` : `${weekOffset}週`}
+                {weekNavLabel()}
               </Text>
               <Pressable
                 style={({ pressed }) => [styles.navBtn, { backgroundColor: colors.background }, pressed && { opacity: 0.7 }]}
