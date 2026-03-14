@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Platform,
   Pressable,
@@ -51,8 +51,8 @@ export default function HomeScreen() {
   const todayStatus = todayRecord.status;
   const statusConf = STATUS_CONFIG[todayStatus];
 
-  const hasConsecutive = hasConsecutiveKyukan(store.records, weekDates);
-  const canAchieveIfDrink = canAchieveConsecutiveIfDrink(store.records, weekDates, today);
+  const hasConsecutive = useMemo(() => hasConsecutiveKyukan(store.records, weekDates), [store.records, weekDates]);
+  const canAchieveIfDrink = useMemo(() => canAchieveConsecutiveIfDrink(store.records, weekDates, today), [store.records, weekDates, today]);
 
   // ─── Animations ──────────────────────────────────────────────────────────────
   const cardScale = useSharedValue(1);
