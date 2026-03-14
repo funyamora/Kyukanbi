@@ -22,18 +22,14 @@ import { useColors } from "@/hooks/use-colors";
 import { useAppStore } from "@/lib/app-context";
 import {
   DayStatus,
+  STATUS_CONFIG,
   canAchieveConsecutiveIfDrink,
   formatDateJP,
+  getDisplayStatus,
   getDayLabel,
   getWeekDates,
   hasConsecutiveKyukan,
 } from "@/lib/store";
-
-const STATUS_CONFIG: Record<DayStatus, { label: string; emoji: string; bg: string; text: string }> = {
-  kyukan:    { label: "休肝日",    emoji: "🍵", bg: "#E8F5E9", text: "#2E7D32" },
-  ok:        { label: "飲酒OK日",  emoji: "🍺", bg: "#FFF3E0", text: "#E65100" },
-  undecided: { label: "未定",      emoji: "？", bg: "#F2F2F7", text: "#8E8E93" },
-};
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -124,10 +120,10 @@ export default function HomeScreen() {
   // 今日のカード背景色
   const todayCardBg =
     todayStatus === "kyukan"
-      ? "#4A90D9"
+      ? colors.primary
       : todayStatus === "ok"
-      ? "#FF6B35"
-      : "#667EEA";
+      ? colors.orange
+      : colors.purple;
 
   return (
     <ScreenContainer containerClassName="bg-background">
@@ -152,7 +148,7 @@ export default function HomeScreen() {
             pointerEvents="none"
             style={[
               StyleSheet.absoluteFill,
-              { backgroundColor: "#4CAF50", borderRadius: 20 },
+              { backgroundColor: colors.success, borderRadius: 20 },
               overlayAnimatedStyle,
             ]}
           />
@@ -201,14 +197,7 @@ export default function HomeScreen() {
             {weekDates.map((date) => {
               const rec = getRecord(date);
               const isToday = date === today;
-              const displayStatus: DayStatus =
-                date < today
-                  ? rec.actualDrinks !== null
-                    ? rec.actualDrinks === 0 ? "kyukan" : "ok"
-                    : "undecided"
-                  : date === today && rec.actualDrinks !== null
-                    ? rec.actualDrinks === 0 ? "kyukan" : "ok"
-                    : rec.status;
+              const displayStatus = getDisplayStatus(date, rec, today);
               const conf = STATUS_CONFIG[displayStatus];
               return (
                 <Pressable
@@ -225,13 +214,13 @@ export default function HomeScreen() {
                     }
                   }}
                 >
-                  <Text style={[styles.dayLabel, isToday && { color: "#4A90D9", fontWeight: "800" }]}>
+                  <Text style={[styles.dayLabel, isToday && { color: colors.primary, fontWeight: "800" }]}>
                     {getDayLabel(date)}
                   </Text>
                   <View
                     style={[
                       styles.dayDot,
-                      { backgroundColor: isToday ? "#4A90D9" : conf.bg },
+                      { backgroundColor: isToday ? colors.primary : conf.bg },
                     ]}
                   >
                     {isToday ? (
@@ -247,8 +236,8 @@ export default function HomeScreen() {
           <View style={[styles.progressSummary, { borderTopColor: colors.border }]}>
             <Text style={[styles.progressLabel, { color: colors.foreground }]}>2連続休肝日</Text>
             {hasConsecutive ? (
-              <View style={[styles.badge, { backgroundColor: "#E8F5E9" }]}>
-                <Text style={{ fontSize: 12, fontWeight: "700", color: "#2E7D32" }}>✅ 達成済み</Text>
+              <View style={[styles.badge, { backgroundColor: STATUS_CONFIG.kyukan.bg }]}>
+                <Text style={{ fontSize: 12, fontWeight: "700", color: STATUS_CONFIG.kyukan.text }}>✅ 達成済み</Text>
               </View>
             ) : (
               <View style={[styles.badge, { backgroundColor: "#FFF3CD" }]}>
@@ -377,7 +366,7 @@ const styles = StyleSheet.create({
   btnNodrinkDone: {
     borderRadius: 14, padding: 18,
     alignItems: "center",
-    backgroundColor: "#4CAF50",
+    backgroundColor: "#4CAF50", // Note: These remain hardcoded as StyleSheet is static
   },
   btnNodrinkText: { fontSize: 18, fontWeight: "700", color: "#fff" },
 });

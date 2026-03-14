@@ -28,6 +28,16 @@ export interface AppSettings {
   achievementNotification: boolean; // 達成通知 ON/OFF
 }
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+export const DAY_LABELS_JP = ["日", "月", "火", "水", "木", "金", "土"] as const;
+
+export const STATUS_CONFIG: Record<DayStatus, { label: string; emoji: string; bg: string; text: string; border: string }> = {
+  kyukan:    { label: "休肝日",    emoji: "🍵", bg: "#E8F5E9", text: "#2E7D32", border: "#4CAF50" },
+  ok:        { label: "飲酒OK日",  emoji: "🍺", bg: "#FFF3E0", text: "#E65100", border: "#FF6B35" },
+  undecided: { label: "未定",      emoji: "？", bg: "#F2F2F7", text: "#8E8E93", border: "#E5E5EA" },
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** 実績ベースで休肝日が確定しているか（actualDrinks が 0 として記録済み） */
@@ -75,19 +85,35 @@ export function getWeekDates(referenceDate?: Date): string[] {
 
 export function formatDateJP(dateStr: string): string {
   const d = new Date(dateStr);
-  const days = ["日", "月", "火", "水", "木", "金", "土"];
-  return `${d.getMonth() + 1}月${d.getDate()}日（${days[d.getDay()]}）`;
+  return `${d.getMonth() + 1}月${d.getDate()}日（${DAY_LABELS_JP[d.getDay()]}）`;
 }
 
 export function formatMonthDayJP(dateStr: string): string {
   const d = new Date(dateStr);
-  const days = ["日", "月", "火", "水", "木", "金", "土"];
-  return `${d.getMonth() + 1}/${d.getDate()}（${days[d.getDay()]}）`;
+  return `${d.getMonth() + 1}/${d.getDate()}（${DAY_LABELS_JP[d.getDay()]}）`;
 }
 
 export function getDayLabel(dateStr: string): string {
-  const days = ["日", "月", "火", "水", "木", "金", "土"];
-  return days[new Date(dateStr).getDay()];
+  return DAY_LABELS_JP[new Date(dateStr).getDay()];
+}
+
+/** 週の日付範囲を "M/D(曜)〜M/D(曜)" 形式でフォーマット */
+export function formatWeekRange(dates: string[]): string {
+  if (dates.length < 7) return "";
+  const sd = new Date(dates[0]);
+  const ed = new Date(dates[6]);
+  return `${sd.getMonth() + 1}/${sd.getDate()}(${DAY_LABELS_JP[sd.getDay()]})〜${ed.getMonth() + 1}/${ed.getDate()}(${DAY_LABELS_JP[ed.getDay()]})`;
+}
+
+/** 表示用ステータスを算出（過去日は実績ベース、当日は実績があれば実績、なければ計画） */
+export function getDisplayStatus(date: string, record: DailyRecord, today: string): DayStatus {
+  if (record.actualDrinks !== null) {
+    return record.actualDrinks === 0 ? "kyukan" : "ok";
+  }
+  if (date < today) {
+    return "undecided";
+  }
+  return record.status;
 }
 
 /** 週の中に2日連続の休肝日があるか判定 */
@@ -230,7 +256,7 @@ export function checkNewBadges(
     for (let i = 1; i < sortedDates.length; i++) {
       const prev = new Date(sortedDates[i - 1]);
       const curr = new Date(sortedDates[i]);
-      const diffDays = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+      const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
       const rPrev = records[sortedDates[i - 1]];
       const rCurr = records[sortedDates[i]];
       if (

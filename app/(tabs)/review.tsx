@@ -18,6 +18,7 @@ import {
   DailyRecord,
   computeMonthlySummary,
   computeWeekdayAverages,
+  formatWeekRange,
   getWeekDates,
   hasConsecutiveKyukan,
   isConfirmedKyukan,
@@ -132,13 +133,7 @@ export default function ReviewScreen() {
   );
 
   const periodLabel = tab === "week"
-    ? weekDates.length >= 7
-      ? (() => {
-          const dow = ["日","月","火","水","木","金","土"];
-          const sd = new Date(weekDates[0]), ed = new Date(weekDates[6]);
-          return `${sd.getMonth() + 1}/${sd.getDate()}(${dow[sd.getDay()]})〜${ed.getMonth() + 1}/${ed.getDate()}(${dow[ed.getDay()]})`;
-        })()
-      : ""
+    ? formatWeekRange(weekDates)
     : `${monthYear.getFullYear()}年${monthYear.getMonth() + 1}月`;
 
   const maxDrinks = Math.max(...stats.dailyDrinks.map((d) => d.drinks), 1);
@@ -187,10 +182,10 @@ export default function ReviewScreen() {
         {(["week", "month"] as TabType[]).map((t) => (
           <Pressable
             key={t}
-            style={[styles.tabItem, tab === t && [styles.tabItemActive, { borderBottomColor: "#4A90D9" }]]}
+            style={[styles.tabItem, tab === t && [styles.tabItemActive, { borderBottomColor: colors.primary }]]}
             onPress={() => setTab(t)}
           >
-            <Text style={[styles.tabText, { color: tab === t ? "#4A90D9" : colors.muted }]}>
+            <Text style={[styles.tabText, { color: tab === t ? colors.primary : colors.muted }]}>
               {t === "week" ? "週" : "月"}
             </Text>
           </Pressable>
@@ -220,7 +215,7 @@ export default function ReviewScreen() {
 
         {/* KPI cards */}
         <View style={styles.kpiGrid}>
-          <View style={[styles.kpiCard, { backgroundColor: "#4A90D9" }]}>
+          <View style={[styles.kpiCard, { backgroundColor: colors.primary }]}>
             <Text style={styles.kpiLabel}>休肝日数</Text>
             <Text style={styles.kpiNum}>{stats.kyukanDays}</Text>
             <Text style={styles.kpiUnit}>日</Text>
@@ -235,7 +230,7 @@ export default function ReviewScreen() {
             <Text style={[styles.kpiNum, { color: colors.foreground }]}>{stats.drinkDays}</Text>
             <Text style={[styles.kpiUnit, { color: colors.muted }]}>日</Text>
             {stats.drinkDays !== prevStats.drinkDays && (
-              <Text style={[styles.kpiDiff, { color: stats.drinkDays < prevStats.drinkDays ? "#4CAF50" : "#FF6B35" }]}>
+              <Text style={[styles.kpiDiff, { color: stats.drinkDays < prevStats.drinkDays ? colors.success : colors.orange }]}>
                 {stats.drinkDays < prevStats.drinkDays ? "▼" : "▲"} 前期比 {Math.abs(stats.drinkDays - prevStats.drinkDays)}日
               </Text>
             )}
@@ -245,14 +240,14 @@ export default function ReviewScreen() {
             <Text style={[styles.kpiNum, { color: colors.foreground }]}>{stats.totalDrinks}</Text>
             <Text style={[styles.kpiUnit, { color: colors.muted }]}>杯</Text>
             {stats.totalDrinks !== prevStats.totalDrinks && (
-              <Text style={[styles.kpiDiff, { color: stats.totalDrinks < prevStats.totalDrinks ? "#4CAF50" : "#FF6B35" }]}>
+              <Text style={[styles.kpiDiff, { color: stats.totalDrinks < prevStats.totalDrinks ? colors.success : colors.orange }]}>
                 {stats.totalDrinks < prevStats.totalDrinks ? "▼" : "▲"} 前期比 {Math.abs(stats.totalDrinks - prevStats.totalDrinks)}杯
               </Text>
             )}
           </View>
           <View style={[styles.kpiCard, { backgroundColor: colors.surface }]}>
             <Text style={[styles.kpiLabel, { color: colors.muted }]}>上限順守率</Text>
-            <Text style={[styles.kpiNum, { color: stats.limitKeptRate >= 70 ? "#4CAF50" : "#FF6B35" }]}>{stats.limitKeptRate}</Text>
+            <Text style={[styles.kpiNum, { color: stats.limitKeptRate >= 70 ? colors.success : colors.orange }]}>{stats.limitKeptRate}</Text>
             <Text style={[styles.kpiUnit, { color: colors.muted }]}>%</Text>
           </View>
         </View>
@@ -272,7 +267,7 @@ export default function ReviewScreen() {
                 <Text
                   style={[
                     styles.summaryValue,
-                    { color: monthlySummary.diff >= 0 ? "#4CAF50" : "#FF6B35" },
+                    { color: monthlySummary.diff >= 0 ? colors.success : colors.orange },
                   ]}
                 >
                   {monthlySummary.diff >= 0 ? "+" : ""}
@@ -310,7 +305,7 @@ export default function ReviewScreen() {
                     styles.bar,
                     {
                       height: barH,
-                      backgroundColor: d.isKyukan ? "#4CAF50" : d.drinks > 0 ? "#FF6B35" : colors.border,
+                      backgroundColor: d.isKyukan ? colors.success : d.drinks > 0 ? colors.orange : colors.border,
                     },
                   ]} />
                   {tab === "week" && (
@@ -322,11 +317,11 @@ export default function ReviewScreen() {
           </View>
           <View style={styles.chartLegend}>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: "#4CAF50" }]} />
+              <View style={[styles.legendDot, { backgroundColor: colors.success }]} />
               <Text style={[styles.legendText, { color: colors.muted }]}>休肝日</Text>
             </View>
             <View style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: "#FF6B35" }]} />
+              <View style={[styles.legendDot, { backgroundColor: colors.orange }]} />
               <Text style={[styles.legendText, { color: colors.muted }]}>飲酒日</Text>
             </View>
           </View>
@@ -348,7 +343,7 @@ export default function ReviewScreen() {
                   <Text style={[styles.rankNum, { color: rankColors[idx] ?? colors.muted }]}>{idx + 1}</Text>
                   <Text style={[styles.rankReason, { color: colors.foreground }]}>{item.reason}</Text>
                   <View style={styles.rankBarWrap}>
-                    <View style={[styles.rankBar, { width: barW as any, backgroundColor: "#4A90D9" }]} />
+                    <View style={[styles.rankBar, { width: barW as any, backgroundColor: colors.primary }]} />
                   </View>
                   <Text style={[styles.rankCount, { color: colors.muted }]}>{item.count}回</Text>
                 </View>
@@ -359,10 +354,10 @@ export default function ReviewScreen() {
 
         {/* Insights */}
         {insights.length > 0 && (
-          <View style={[styles.insightCard, { borderLeftColor: "#4A90D9", backgroundColor: "#EEF6FF" }]}>
+          <View style={[styles.insightCard, { borderLeftColor: colors.primary, backgroundColor: "#EEF6FF" }]}>
             {insights.map((ins, i) => (
               <View key={i} style={styles.insightRow}>
-                <Text style={{ fontSize: 8, color: "#4A90D9", marginTop: 5 }}>●</Text>
+                <Text style={{ fontSize: 8, color: colors.primary, marginTop: 5 }}>●</Text>
                 <Text style={[styles.insightText, { color: "#1A3A5C" }]}>{ins}</Text>
               </View>
             ))}

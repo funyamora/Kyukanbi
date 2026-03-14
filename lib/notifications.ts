@@ -10,10 +10,15 @@ const isExpoGo = Constants.executionEnvironment === "storeClient";
 const PERMISSION_REQUESTED_KEY = "notification_permission_requested";
 const REMINDER_ID = "reminder_daily";
 
+/** 通知スケジューリングが可能な環境かどうかを判定 */
+function canScheduleNotifications(): boolean {
+  return Platform.OS !== "web" && !isExpoGo;
+}
+
 // ─── 権限管理 ────────────────────────────────────────────────────────────────
 
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (Platform.OS === "web" || isExpoGo) return false;
+  if (!canScheduleNotifications()) return false;
 
   const { status: existing } = await Notifications.getPermissionsAsync();
   let finalStatus = existing;
@@ -38,7 +43,7 @@ export async function requestNotificationPermission(): Promise<boolean> {
 // ─── リマインダースケジューリング ────────────────────────────────────────────
 
 export async function scheduleReminder(time: string, store: AppStore): Promise<void> {
-  if (Platform.OS === "web" || isExpoGo) return;
+  if (!canScheduleNotifications()) return;
 
   // 既存のリマインダーをキャンセル
   await cancelReminder();
@@ -78,14 +83,14 @@ export async function scheduleReminder(time: string, store: AppStore): Promise<v
 }
 
 export async function cancelReminder(): Promise<void> {
-  if (Platform.OS === "web" || isExpoGo) return;
+  if (!canScheduleNotifications()) return;
   await Notifications.cancelScheduledNotificationAsync(REMINDER_ID);
 }
 
 // ─── 達成通知 ────────────────────────────────────────────────────────────────
 
 export async function sendAchievementNotification(): Promise<void> {
-  if (Platform.OS === "web" || isExpoGo) return;
+  if (!canScheduleNotifications()) return;
 
   await Notifications.scheduleNotificationAsync({
     content: {

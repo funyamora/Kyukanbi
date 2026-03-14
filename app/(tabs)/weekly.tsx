@@ -26,29 +26,26 @@ import type { ThemeColorPalette } from "@/constants/theme";
 import {
   DayStatus,
   DailyRecord,
+  STATUS_CONFIG,
   formatMonthDayJP,
+  formatWeekRange,
   getDayLabel,
   getWeekDates,
   hasConsecutiveKyukan,
 } from "@/lib/store";
 
 const STATUS_CYCLE: DayStatus[] = ["undecided", "kyukan", "ok"];
-const STATUS_CONFIG: Record<DayStatus, { label: string; emoji: string; bg: string; text: string; border: string }> = {
-  kyukan:    { label: "休肝日",    emoji: "🍵", bg: "#E8F5E9", text: "#2E7D32", border: "#4CAF50" },
-  ok:        { label: "飲酒OK日",  emoji: "🍺", bg: "#FFF3E0", text: "#E65100", border: "#FF6B35" },
-  undecided: { label: "未定",      emoji: "？", bg: "#F2F2F7", text: "#8E8E93", border: "#E5E5EA" },
-};
 
 const STATUS_BADGE_STYLES = StyleSheet.create({
-  kyukan:    { backgroundColor: "#E8F5E9", borderColor: "#4CAF50" },
-  ok:        { backgroundColor: "#FFF3E0", borderColor: "#FF6B35" },
-  undecided: { backgroundColor: "#F2F2F7", borderColor: "#E5E5EA" },
+  kyukan:    { backgroundColor: STATUS_CONFIG.kyukan.bg, borderColor: STATUS_CONFIG.kyukan.border },
+  ok:        { backgroundColor: STATUS_CONFIG.ok.bg, borderColor: STATUS_CONFIG.ok.border },
+  undecided: { backgroundColor: STATUS_CONFIG.undecided.bg, borderColor: STATUS_CONFIG.undecided.border },
 });
 
 const STATUS_TEXT_STYLES = StyleSheet.create({
-  kyukan:    { color: "#2E7D32" },
-  ok:        { color: "#E65100" },
-  undecided: { color: "#8E8E93" },
+  kyukan:    { color: STATUS_CONFIG.kyukan.text },
+  ok:        { color: STATUS_CONFIG.ok.text },
+  undecided: { color: STATUS_CONFIG.undecided.text },
 });
 
 const SWIPE_THRESHOLD = 80;
@@ -123,11 +120,11 @@ function SwipeableDayRow({ date, isToday, rec, colors, onSetKyukan, onSetOk, onT
   return (
     <View style={styles.swipeContainer}>
       {/* Left swipe bg (kyukan) */}
-      <Animated.View style={[styles.swipeBg, styles.swipeBgLeft, { backgroundColor: "#4CAF50" }, leftBgStyle]}>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgLeft, { backgroundColor: STATUS_CONFIG.kyukan.border }, leftBgStyle]}>
         <Text style={styles.swipeBgLabel}>🍵 休肝日</Text>
       </Animated.View>
       {/* Right swipe bg (ok) */}
-      <Animated.View style={[styles.swipeBg, styles.swipeBgRight, { backgroundColor: "#FF6B35" }, rightBgStyle]}>
+      <Animated.View style={[styles.swipeBg, styles.swipeBgRight, { backgroundColor: STATUS_CONFIG.ok.border }, rightBgStyle]}>
         <Text style={styles.swipeBgLabel}>🍺 飲酒OK</Text>
       </Animated.View>
 
@@ -142,7 +139,7 @@ function SwipeableDayRow({ date, isToday, rec, colors, onSetKyukan, onSetOk, onT
             onPress={handlePress}
           >
             <View style={styles.dayLeft}>
-              <Text style={[styles.dayLabelBig, isToday && { color: "#4A90D9" }]}>
+              <Text style={[styles.dayLabelBig, isToday && { color: colors.primary }]}>
                 {dayLabel}
               </Text>
               <Text style={[styles.dayDate, { color: colors.muted }]}>
@@ -223,20 +220,13 @@ export default function WeeklyScreen() {
     [patchRecord]
   );
 
-  const shortDateRange = (dates: string[]) => {
-    if (dates.length < 7) return "";
-    const dow = ["日","月","火","水","木","金","土"];
-    const sd = new Date(dates[0]), ed = new Date(dates[6]);
-    return `${sd.getMonth() + 1}/${sd.getDate()}(${dow[sd.getDay()]})〜${ed.getMonth() + 1}/${ed.getDate()}(${dow[ed.getDay()]})`;
-  };
-
-  const weekLabel = () => shortDateRange(weekDates);
+  const weekLabel = () => formatWeekRange(weekDates);
 
   const weekNavLabel = () => {
     if (weekOffset === 0) return "今週";
     if (weekOffset === 1) return "来週";
     if (weekOffset === -1) return "先週";
-    return shortDateRange(weekDates);
+    return formatWeekRange(weekDates);
   };
 
   return (
@@ -276,21 +266,21 @@ export default function WeeklyScreen() {
 
             {/* Alert / achievement */}
             {hasConsecutive ? (
-              <View style={[styles.alertCard, { backgroundColor: "#E8F5E9", borderLeftColor: "#4CAF50" }]}>
+              <View style={[styles.alertCard, { backgroundColor: STATUS_CONFIG.kyukan.bg, borderLeftColor: STATUS_CONFIG.kyukan.border }]}>
                 <Text style={{ fontSize: 20 }}>✅</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.alertTitle, { color: "#2E7D32" }]}>2連続休肝日 達成！</Text>
-                  <Text style={[styles.alertText, { color: "#2E7D32" }]}>
+                  <Text style={[styles.alertTitle, { color: STATUS_CONFIG.kyukan.text }]}>2連続休肝日 達成！</Text>
+                  <Text style={[styles.alertText, { color: STATUS_CONFIG.kyukan.text }]}>
                     今週は2日連続の休肝日が設定されています。素晴らしいです！
                   </Text>
                 </View>
               </View>
             ) : (
-              <View style={[styles.alertCard, { backgroundColor: "#FFF0EB", borderLeftColor: "#FF6B35" }]}>
+              <View style={[styles.alertCard, { backgroundColor: "#FFF0EB", borderLeftColor: STATUS_CONFIG.ok.border }]}>
                 <Text style={{ fontSize: 20 }}>🚨</Text>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.alertTitle, { color: "#C0392B" }]}>2連続休肝日が未達成です</Text>
-                  <Text style={[styles.alertText, { color: "#C0392B" }]}>
+                  <Text style={[styles.alertTitle, { color: colors.error }]}>2連続休肝日が未達成です</Text>
+                  <Text style={[styles.alertText, { color: colors.error }]}>
                     2日連続の休肝日を設定すると達成できます。
                   </Text>
                 </View>
@@ -300,12 +290,12 @@ export default function WeeklyScreen() {
             {/* Summary */}
             <View style={[styles.summaryRow, { backgroundColor: colors.surface }]}>
               <View style={styles.summaryItem}>
-                <Text style={[styles.summaryNum, { color: "#4CAF50" }]}>{kyukanDays}</Text>
+                <Text style={[styles.summaryNum, { color: colors.success }]}>{kyukanDays}</Text>
                 <Text style={[styles.summaryLabel, { color: colors.muted }]}>休肝日</Text>
               </View>
               <View style={[styles.summaryDivider, { backgroundColor: colors.border }]} />
               <View style={styles.summaryItem}>
-                <Text style={[styles.summaryNum, { color: "#FF6B35" }]}>
+                <Text style={[styles.summaryNum, { color: colors.orange }]}>
                   {weekDates.filter((d) => getRecord(d).status === "ok").length}
                 </Text>
                 <Text style={[styles.summaryLabel, { color: colors.muted }]}>飲酒OK日</Text>
