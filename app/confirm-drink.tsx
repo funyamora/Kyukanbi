@@ -38,14 +38,29 @@ const TRIVIA_LINKS: TriviaLink[] = [
     url: "https://www.axa.co.jp/100-year-life/health/20231228p/",
   },
   {
-    title: "休肝日の効果",
-    description: "週2日以上の休肝日を設けることで、肝臓の回復と飲酒量の自然な減少が期待できます。",
-    url: "https://www.e-healthnet.mhlw.go.jp/information/alcohol/a-03-003.html",
+    title: "お酒が強い人ほど要注意！！",
+    description: "お酒に強い人は、アルコール依存症の割合が、他のタイプの人よりも多いことが研究でわかっているのです。",
+    url: "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000176279.html",
   },
   {
-    title: "アルコールと生活習慣病",
-    description: "長期の多量飲酒は高血圧・脂質異常症・糖尿病などのリスクを高めます。",
-    url: "https://www.e-healthnet.mhlw.go.jp/information/alcohol/a-01-003.html",
+    title: "「体重はそこまで増えていないから大丈夫」と思っていませんか？",
+    description: "肝臓に脂肪が溜まっている「隠れ脂肪肝」の可能性があります。",
+    url: "https://saito-cl-liver-regeneration.com/blog/post-1301/",
+  },
+  {
+    title: "飲み過ぎは脂肪蓄積のもと！ 肝臓とお酒の関係",
+    description: "過剰な飲酒を続けると、死に至る疾患（しっかん）にまで進行する",
+    url: "https://www.taisho-direct.jp/simages/contents/column/body/liver/",
+  },
+  {
+    title: "飲み過ぎで肌ボロボロ？　酒がやめられない人が老けて見える理由",
+    description: "毎晩のようにお酒を飲む方で肌荒れに悩んでいる方がいれば、まずは1週間寝酒をやめてみましょう。",
+    url: "https://gooday.nikkei.co.jp/atcl/report/14/091100015/030100103/?P=2%EF%BC%88%E6%97%A5%E7%B5%8CGooday%EF%BC%89",
+  },
+  {
+    title: "老化を促進させる「糖化」　実は飲酒と密接な関係が…",
+    description: "糖化は老化要因の一つで肌のハリやシワだけでなく、体内の血管や内臓、骨などの機能を低下させ様々な病気の原因になる。",
+    url: "https://www.nikkei.com/nstyle-article/DGXMZO36418670S8A011C1000000/",
   },
 ];
 

@@ -47,7 +47,7 @@ describe("computeWeekdayAverages", () => {
 describe("checkNewBadges", () => {
   it("does not unlock first_kyukan without satisfaction", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", actualDrinks: 0 }),
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).not.toContain("first_kyukan");
@@ -55,7 +55,7 @@ describe("checkNewBadges", () => {
 
   it("unlocks first_kyukan with kyukan record and satisfaction", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great", actualDrinks: 0 }),
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).toContain("first_kyukan");
@@ -63,8 +63,8 @@ describe("checkNewBadges", () => {
 
   it("does not unlock first_consecutive without satisfaction on both days", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
-      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great", actualDrinks: 0 }),
+      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan", actualDrinks: 0 }),
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).not.toContain("first_consecutive");
@@ -72,8 +72,8 @@ describe("checkNewBadges", () => {
 
   it("unlocks first_consecutive with 2 consecutive kyukan days with satisfaction", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
-      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan", satisfaction: "okay" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great", actualDrinks: 0 }),
+      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan", satisfaction: "okay", actualDrinks: 0 }),
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).toContain("first_consecutive");
@@ -81,7 +81,7 @@ describe("checkNewBadges", () => {
 
   it("does not return already earned badges", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", satisfaction: "great", actualDrinks: 0 }),
     };
     const result = checkNewBadges(records, ["first_kyukan"], 2);
     expect(result).not.toContain("first_kyukan");
@@ -90,8 +90,8 @@ describe("checkNewBadges", () => {
   it("unlocks first_weekly_goal when weekly target is met", () => {
     // Week of Mon 2026-03-02 to Sun 2026-03-08, need 2 kyukan days
     const records: Record<string, DailyRecord> = {
-      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan" }),
-      "2026-03-03": makeRecord("2026-03-03", { status: "kyukan" }),
+      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan", actualDrinks: 0 }),
+      "2026-03-03": makeRecord("2026-03-03", { status: "kyukan", actualDrinks: 0 }),
     };
     const result = checkNewBadges(records, [], 2);
     expect(result).toContain("first_weekly_goal");
@@ -102,11 +102,11 @@ describe("computeMonthlySummary", () => {
   it("computes diff correctly between months", () => {
     const records: Record<string, DailyRecord> = {
       // March: 3 kyukan days
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan" }),
-      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan" }),
-      "2026-03-03": makeRecord("2026-03-03", { status: "kyukan" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", actualDrinks: 0 }),
+      "2026-03-02": makeRecord("2026-03-02", { status: "kyukan", actualDrinks: 0 }),
+      "2026-03-03": makeRecord("2026-03-03", { status: "kyukan", actualDrinks: 0 }),
       // February: 1 kyukan day
-      "2026-02-10": makeRecord("2026-02-10", { status: "kyukan" }),
+      "2026-02-10": makeRecord("2026-02-10", { status: "kyukan", actualDrinks: 0 }),
     };
     // month=2 means March (0-indexed)
     const result = computeMonthlySummary(records, 2026, 2, 2);
@@ -121,7 +121,7 @@ describe("computeMonthlySummary", () => {
     const records: Record<string, DailyRecord> = {};
     for (let i = 1; i <= 10; i++) {
       const key = `2026-03-${String(i).padStart(2, "0")}`;
-      records[key] = makeRecord(key, { status: "kyukan" });
+      records[key] = makeRecord(key, { status: "kyukan", actualDrinks: 0 });
     }
     const result = computeMonthlySummary(records, 2026, 2, 2);
     expect(result.achievementRate).toBe(100);
@@ -130,7 +130,7 @@ describe("computeMonthlySummary", () => {
 
   it("returns encouraging comment for low achievement", () => {
     const records: Record<string, DailyRecord> = {
-      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan" }),
+      "2026-03-01": makeRecord("2026-03-01", { status: "kyukan", actualDrinks: 0 }),
     };
     const result = computeMonthlySummary(records, 2026, 2, 2);
     expect(result.achievementRate).toBeLessThan(50);

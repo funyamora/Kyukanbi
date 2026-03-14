@@ -30,6 +30,11 @@ export interface AppSettings {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/** 実績ベースで休肝日が確定しているか（actualDrinks が 0 として記録済み） */
+export function isConfirmedKyukan(record: DailyRecord | undefined): boolean {
+  return record?.actualDrinks !== null && record?.actualDrinks !== undefined && record?.actualDrinks === 0;
+}
+
 /** ローカルタイムゾーンで "YYYY-MM-DD" を返す（toISOStringはUTC基準なので使わない） */
 export function toLocalDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -88,9 +93,7 @@ export function getDayLabel(dateStr: string): string {
 /** 週の中に2日連続の休肝日があるか判定 */
 export function hasConsecutiveKyukan(records: Record<string, DailyRecord>, weekDates: string[]): boolean {
   for (let i = 0; i < weekDates.length - 1; i++) {
-    const a = records[weekDates[i]]?.status;
-    const b = records[weekDates[i + 1]]?.status;
-    if (a === "kyukan" && b === "kyukan") return true;
+    if (isConfirmedKyukan(records[weekDates[i]]) && isConfirmedKyukan(records[weekDates[i + 1]])) return true;
   }
   return false;
 }
@@ -101,8 +104,8 @@ export function canAchieveConsecutiveIfDrink(
   weekDates: string[],
   today: string
 ): boolean {
-  // 今日を飲酒OKとした場合のシミュレーション
-  const simulated = { ...records, [today]: { ...(records[today] ?? defaultRecord(today)), status: "ok" as DayStatus } };
+  // 今日を飲酒とした場合のシミュレーション（実績ベース）
+  const simulated = { ...records, [today]: { ...(records[today] ?? defaultRecord(today)), status: "ok" as DayStatus, actualDrinks: 1 } };
   return hasConsecutiveKyukan(simulated, weekDates);
 }
 
@@ -197,7 +200,7 @@ function weekGoalMet(
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
     const key = toLocalDateStr(d);
-    if (records[key]?.status === "kyukan") count++;
+    if (isConfirmedKyukan(records[key])) count++;
   }
   return count >= goalDays;
 }
@@ -216,7 +219,7 @@ export function checkNewBadges(
 
   // first_kyukan: いずれかのレコードが kyukan かつ満足度記録済み
   if (!earned.has("first_kyukan")) {
-    if (Object.values(records).some((r) => r.status === "kyukan" && r.satisfaction !== null)) {
+    if (Object.values(records).some((r) => isConfirmedKyukan(r) && r.satisfaction !== null)) {
       newBadges.push("first_kyukan");
     }
   }
@@ -232,8 +235,8 @@ export function checkNewBadges(
       const rCurr = records[sortedDates[i]];
       if (
         diffDays === 1 &&
-        rPrev?.status === "kyukan" && rPrev?.satisfaction !== null &&
-        rCurr?.status === "kyukan" && rCurr?.satisfaction !== null
+        isConfirmedKyukan(rPrev) && rPrev?.satisfaction !== null &&
+        isConfirmedKyukan(rCurr) && rCurr?.satisfaction !== null
       ) {
         newBadges.push("first_consecutive");
         break;
@@ -339,13 +342,13 @@ export function computeMonthlySummary(
 } {
   // 今月の休肝日数
   const monthDates = getMonthDatesForSummary(year, month);
-  const kyukanDays = monthDates.filter((d) => records[d]?.status === "kyukan").length;
+  const kyukanDays = monthDates.filter((d) => isConfirmedKyukan(records[d])).length;
 
   // 先月の休肝日数
   const prevMonth = month === 0 ? 11 : month - 1;
   const prevYear = month === 0 ? year - 1 : year;
   const prevDates = getMonthDatesForSummary(prevYear, prevMonth);
-  const prevMonthKyukanDays = prevDates.filter((d) => records[d]?.status === "kyukan").length;
+  const prevMonthKyukanDays = prevDates.filter((d) => isConfirmedKyukan(records[d])).length;
 
   const diff = kyukanDays - prevMonthKyukanDays;
 

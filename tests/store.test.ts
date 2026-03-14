@@ -38,8 +38,8 @@ describe("hasConsecutiveKyukan", () => {
       "2026-03-05", "2026-03-06", "2026-03-07", "2026-03-08",
     ];
     const records: Record<string, DailyRecord> = {
-      "2026-03-02": { ...defaultRecord("2026-03-02"), status: "kyukan" },
-      "2026-03-03": { ...defaultRecord("2026-03-03"), status: "kyukan" },
+      "2026-03-02": { ...defaultRecord("2026-03-02"), status: "kyukan", actualDrinks: 0 },
+      "2026-03-03": { ...defaultRecord("2026-03-03"), status: "kyukan", actualDrinks: 0 },
     };
     expect(hasConsecutiveKyukan(records, dates)).toBe(true);
   });
@@ -50,9 +50,9 @@ describe("hasConsecutiveKyukan", () => {
       "2026-03-05", "2026-03-06", "2026-03-07", "2026-03-08",
     ];
     const records: Record<string, DailyRecord> = {
-      "2026-03-02": { ...defaultRecord("2026-03-02"), status: "kyukan" },
-      "2026-03-03": { ...defaultRecord("2026-03-03"), status: "ok" },
-      "2026-03-04": { ...defaultRecord("2026-03-04"), status: "kyukan" },
+      "2026-03-02": { ...defaultRecord("2026-03-02"), status: "kyukan", actualDrinks: 0 },
+      "2026-03-03": { ...defaultRecord("2026-03-03"), status: "ok", actualDrinks: 2 },
+      "2026-03-04": { ...defaultRecord("2026-03-04"), status: "kyukan", actualDrinks: 0 },
     };
     expect(hasConsecutiveKyukan(records, dates)).toBe(false);
   });

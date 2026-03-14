@@ -20,6 +20,7 @@ import {
   computeWeekdayAverages,
   getWeekDates,
   hasConsecutiveKyukan,
+  isConfirmedKyukan,
   toLocalDateStr,
 } from "@/lib/store";
 
@@ -53,7 +54,7 @@ interface Stats {
 
 function computeStats(records: Record<string, DailyRecord>, dates: string[]): Stats {
   const relevant = dates.map((d) => records[d]).filter(Boolean);
-  const kyukanDays = relevant.filter((r) => r.status === "kyukan").length;
+  const kyukanDays = relevant.filter((r) => isConfirmedKyukan(r)).length;
   const drinkDays = relevant.filter((r) => r.status === "ok").length;
   const totalDrinks = relevant.reduce((s, r) => s + (r.actualDrinks ?? 0), 0);
 
@@ -76,7 +77,7 @@ function computeStats(records: Record<string, DailyRecord>, dates: string[]): St
     return {
       date,
       drinks: r?.actualDrinks ?? 0,
-      isKyukan: r?.status === "kyukan",
+      isKyukan: isConfirmedKyukan(r),
     };
   });
 

@@ -132,7 +132,12 @@ const BADGE_DEFINITIONS = [
   { id: "one_month_streak",   emoji: "🌟", name: "1ヶ月継続" },
 ] as const;
 
+// 実績ベースで休肝日が確定しているか（actualDrinks === 0 として記録済み）
+// バッジ判定・週間目標・月次サマリーなど全箇所で利用する
+function isConfirmedKyukan(record: DailyRecord | undefined): boolean
+
 // 新しいバッジの解除判定。戻り値は新たに獲得したバッジIDの配列
+// ※ 休肝日の判定は isConfirmedKyukan（実績ベース）で行う
 function checkNewBadges(records, existingBadges, weeklyGoalDays): string[]
 ```
 
