@@ -56,4 +56,9 @@ describe("checkConsecutiveAchievement", () => {
     };
     expect(checkConsecutiveAchievement(records, "2026-03-04")).toBe(false);
   });
+
+  it("returns false for empty records", () => {
+    const records: Record<string, DailyRecord> = {};
+    expect(checkConsecutiveAchievement(records, "2026-03-05")).toBe(false);
+  });
 });
